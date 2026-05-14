@@ -343,12 +343,21 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.78rem;
             font-weight: 500;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             border-radius: 0;
-            padding: 0.45rem 1rem;
+            padding: 0.4rem 1.1rem;
             border-width: 1px;
+            white-space: nowrap;
+            line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            flex-shrink: 0;
+            min-height: 2.55rem;
         }
+        .btn i { font-size: 1.05em; line-height: 1; }
         .btn-primary, .btn-primary:focus {
             background: var(--gz-ink);
             border-color: var(--gz-ink);
@@ -384,8 +393,19 @@
         }
         .btn-outline-info:hover { background: var(--gz-ink); color: var(--gz-surface); }
         .btn-light { background: transparent; border-color: var(--gz-rule); color: var(--gz-ink); }
-        .btn-sm { font-size: 0.7rem; padding: 0.3rem 0.7rem; letter-spacing: 0.1em; }
-        .btn-lg { font-size: 0.85rem; padding: 0.65rem 1.4rem; }
+        .btn-sm {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.85rem;
+            letter-spacing: 0.08em;
+            gap: 0.35rem;
+            min-height: 2.1rem;
+        }
+        .btn-lg {
+            font-size: 0.85rem;
+            padding: 0.55rem 1.6rem;
+            letter-spacing: 0.12em;
+            min-height: 3rem;
+        }
 
         /* ===== FORMS ===== */
         .form-control, .form-select {
@@ -395,7 +415,9 @@
             font-family: 'EB Garamond', serif;
             font-size: 1rem;
             color: var(--gz-ink);
-            padding: 0.4rem 0.7rem;
+            padding: 0.45rem 0.75rem;
+            line-height: 1.5;
+            min-height: 2.55rem;
         }
         .form-control:focus, .form-select:focus {
             background: #fff;
@@ -404,7 +426,16 @@
             color: var(--gz-ink);
         }
         .form-control::placeholder { color: var(--gz-muted); font-style: italic; }
-        .form-control-lg { font-size: 1.2rem; padding: 0.55rem 0.9rem; }
+        .form-control-sm, .form-select-sm {
+            font-size: 0.85rem;
+            padding: 0.32rem 0.6rem;
+            min-height: 2.1rem;
+        }
+        .form-control-lg, .form-select-lg {
+            font-size: 1.15rem;
+            padding: 0.55rem 0.9rem;
+            min-height: 3rem;
+        }
         .form-label {
             font-family: 'Inter', sans-serif;
             font-size: 0.7rem;
