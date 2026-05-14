@@ -100,10 +100,15 @@
 
         /* ===== NAV ===== */
         .gz-nav {
+            border-top: 1px solid var(--gz-rule);
             border-bottom: 1px solid var(--gz-rule);
             padding: 0.6rem 0;
             margin-bottom: 1.6rem;
             background: var(--gz-bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 8px -6px rgba(28, 26, 23, 0.15);
         }
         .gz-nav-inner {
             display: flex;
@@ -654,6 +659,17 @@
             font-size: 0.8rem;
             font-family: 'IBM Plex Mono', monospace;
         }
+
+        /* row of icon-only action buttons in tables */
+        .gz-actions {
+            display: inline-flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            vertical-align: middle;
+        }
+        .gz-actions .btn { padding: 0.3rem 0.55rem; min-width: 2.1rem; }
+        .gz-actions form { display: inline-flex; margin: 0; }
     </style>
 </head>
 <body>

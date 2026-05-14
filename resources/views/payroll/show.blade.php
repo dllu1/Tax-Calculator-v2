@@ -276,11 +276,13 @@
                         @endif
                     </td>
                     <td class="money">{{ $fmt($a->amount) }}</td>
-                    <td>
-                        <form method="POST" action="{{ route('allowance.destroy', $a) }}" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                        </form>
+                    <td class="text-end">
+                        <div class="gz-actions">
+                            <form method="POST" action="{{ route('allowance.destroy', $a) }}">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger" title="Xóa phụ cấp"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @empty
@@ -320,11 +322,13 @@
                     <td>{{ optional($a->advance_date)->format('d/m/Y') }}</td>
                     <td class="money">{{ $fmt($a->amount) }}</td>
                     <td><em>{{ $a->note }}</em></td>
-                    <td>
-                        <form method="POST" action="{{ route('advance.destroy', $a) }}" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                        </form>
+                    <td class="text-end">
+                        <div class="gz-actions">
+                            <form method="POST" action="{{ route('advance.destroy', $a) }}">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger" title="Xóa tạm ứng"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @empty

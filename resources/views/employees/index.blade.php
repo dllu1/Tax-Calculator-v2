@@ -61,18 +61,20 @@
                     @endif
                 </td>
                 <td class="text-end">
-                    <a href="{{ route('payroll.show', [$e->id, now()->year, now()->month]) }}"
-                       class="btn btn-sm btn-outline-info" title="Phiếu lương">
-                        <i class="bi bi-receipt"></i>
-                    </a>
-                    <a href="{{ route('employees.edit', $e) }}" class="btn btn-sm btn-outline-warning" title="Sửa">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <form action="{{ route('employees.destroy', $e) }}" method="POST" class="d-inline"
-                          onsubmit="return confirm('Xóa nhân viên {{ $e->full_name }}?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                    </form>
+                    <div class="gz-actions">
+                        <a href="{{ route('payroll.show', [$e->id, now()->year, now()->month]) }}"
+                           class="btn btn-sm btn-outline-info" title="Phiếu lương">
+                            <i class="bi bi-receipt"></i>
+                        </a>
+                        <a href="{{ route('employees.edit', $e) }}" class="btn btn-sm btn-outline-warning" title="Sửa">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form action="{{ route('employees.destroy', $e) }}" method="POST"
+                              onsubmit="return confirm('Xóa nhân viên {{ $e->full_name }}?')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             @empty
