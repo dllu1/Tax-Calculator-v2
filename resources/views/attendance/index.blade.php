@@ -1,66 +1,65 @@
 @extends('layouts.app')
-@section('title', 'Chấm công ngày '.$date->format('d/m/Y'))
+@section('title', __('Chấm công ngày').' '.$date->format('d/m/Y'))
 
 @section('content')
 
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>I</em> Bảng Chấm Công</span>
+    <span class="gz-section-rule-text"><em>I</em> {{ __('Bảng Chấm Công') }}</span>
 </div>
 
 <div class="gz-card-head" style="margin-bottom: 1rem;">
     <div>
         <h2 class="gz-section-title mb-1">
-            Chấm công ngày {{ $date->format('d/m/Y') }}
+            {{ __('Chấm công ngày') }} {{ $date->format('d/m/Y') }}
             @if ($date->isToday())
-                <span class="badge solid">Hôm nay</span>
+                <span class="badge solid">{{ __('Hôm nay') }}</span>
             @endif
             @if ($date->isSunday())
-                <span class="badge bg-warning">Chủ nhật · ×2 công</span>
+                <span class="badge bg-warning">{{ __('Chủ nhật · ×2 công') }}</span>
             @endif
         </h2>
         <p class="gz-section-lede mb-0">
-            Ghi nhận trạng thái làm việc trong ngày — bấm một trạng thái cho mỗi nhân viên,
-            nhập số ca tăng ca (mỗi ca = 3 giờ) rồi lưu.
+            {{ __('Ghi nhận trạng thái làm việc trong ngày — bấm một trạng thái cho mỗi nhân viên, nhập số ca tăng ca (mỗi ca = 3 giờ) rồi lưu.') }}
         </p>
     </div>
     <a href="{{ route('attendance.month', ['year' => $date->year, 'month' => $date->month]) }}"
        class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-grid-3x3"></i> Xem Cả Tháng
+        <i class="bi bi-grid-3x3"></i> {{ __('Xem Cả Tháng') }}
     </a>
 </div>
 
 <div class="gz-card">
     <form method="GET" class="row g-2 align-items-end mb-3">
         <div class="col-md-4">
-            <label class="form-label">Chọn ngày</label>
+            <label class="form-label">{{ __('Chọn ngày') }}</label>
             <input type="date" name="date" value="{{ $date->format('Y-m-d') }}"
                    class="form-control form-control-lg" onchange="this.form.submit()">
         </div>
         <div class="col-md-auto d-flex gap-1">
             <a href="{{ route('attendance.index', ['date' => $date->copy()->subDay()->format('Y-m-d')]) }}"
-               class="btn btn-outline-secondary"><i class="bi bi-chevron-left"></i> Hôm Trước</a>
-            <a href="{{ route('attendance.index') }}" class="btn btn-outline-primary">Hôm Nay</a>
+               class="btn btn-outline-secondary"><i class="bi bi-chevron-left"></i> {{ __('Hôm Trước') }}</a>
+            <a href="{{ route('attendance.index') }}" class="btn btn-outline-primary">{{ __('Hôm Nay') }}</a>
             <a href="{{ route('attendance.index', ['date' => $date->copy()->addDay()->format('Y-m-d')]) }}"
-               class="btn btn-outline-secondary">Hôm Sau <i class="bi bi-chevron-right"></i></a>
+               class="btn btn-outline-secondary">{{ __('Hôm Sau') }} <i class="bi bi-chevron-right"></i></a>
         </div>
     </form>
 
     <div class="alert alert-light small mb-3">
-        <strong>Hướng dẫn:</strong> Bấm 1 nút trạng thái cho mỗi nhân viên. Nếu có tăng ca, nhập số ca (mỗi ca = 3 giờ).
-        Cuối cùng bấm <strong>"Lưu Chấm Công"</strong> ở dưới.
+        <strong>{{ __('Hướng dẫn:') }}</strong> {{ __('Bấm 1 nút trạng thái cho mỗi nhân viên. Nếu có tăng ca, nhập số ca (mỗi ca = 3 giờ).') }}
+        {{ __('Cuối cùng bấm') }} <strong>"{{ __('Lưu Chấm Công') }}"</strong> {{ __('ở dưới.') }}
     </div>
 
-    <form method="POST" action="{{ route('attendance.save') }}" id="attForm">
+    <form method="POST" action="{{ route('attendance.save') }}" id="attForm" data-ajax="true">
         @csrf
         <input type="hidden" name="date" value="{{ $date->format('Y-m-d') }}">
 
         <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-            <span class="gz-label">Điền nhanh cho cả danh sách:</span>
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="fillAll('{{ $date->isSunday() ? 'sunday' : 'normal' }}')">
-                <i class="bi bi-check-all"></i> Đi Làm Hết
+            <span class="gz-label">{{ __('Điền nhanh cho cả danh sách:') }}</span>
+            <button type="button" class="btn btn-sm btn-outline-success js-fill-all" data-value="{{ $date->isSunday() ? 'sunday' : 'normal' }}">
+                <i class="bi bi-check-all"></i> {{ __('Đi Làm Hết') }}
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="fillAll('')">
-                <i class="bi bi-x-circle"></i> Xóa Hết
+            <button type="button" class="btn btn-sm btn-outline-danger js-fill-all" data-value="">
+                <i class="bi bi-x-circle"></i> {{ __('Xóa Hết') }}
             </button>
         </div>
 
@@ -69,9 +68,9 @@
             <thead>
                 <tr>
                     <th style="width:48px">#</th>
-                    <th>Nhân viên</th>
-                    <th style="min-width:480px">Trạng thái</th>
-                    <th style="width:140px" class="num">Tăng ca (ca 3h)</th>
+                    <th>{{ __('Nhân viên') }}</th>
+                    <th style="min-width:480px">{{ __('Trạng thái') }}</th>
+                    <th style="width:140px" class="num">{{ __('Tăng ca (ca 3h)') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -91,10 +90,11 @@
                         <div class="btn-group" role="group" data-emp="{{ $emp->id }}">
                             @php
                                 $options = [
-                                    ['val' => 'normal', 'label' => 'Đi làm',     'icon' => 'bi-check-lg',  'class' => 'success'],
-                                    ['val' => 'sunday', 'label' => 'Chủ nhật',   'icon' => 'bi-sun',       'class' => 'warning'],
-                                    ['val' => 'leave',  'label' => 'Có phép',    'icon' => 'bi-bookmark',  'class' => 'secondary'],
-                                    ['val' => 'absent', 'label' => 'Không phép', 'icon' => 'bi-x-lg',      'class' => 'danger'],
+                                    ['val' => 'normal', 'label' => __('Đi làm'),     'icon' => 'bi-check-lg',  'class' => 'success'],
+                                    ['val' => 'half',   'label' => __('Nửa ngày'),   'icon' => 'bi-circle-half','class' => 'info'],
+                                    ['val' => 'sunday', 'label' => __('Chủ nhật'),   'icon' => 'bi-sun',       'class' => 'warning'],
+                                    ['val' => 'leave',  'label' => __('Có phép'),    'icon' => 'bi-bookmark',  'class' => 'secondary'],
+                                    ['val' => 'absent', 'label' => __('Không phép'), 'icon' => 'bi-x-lg',      'class' => 'danger'],
                                 ];
                             @endphp
                             @foreach ($options as $opt)
@@ -119,7 +119,7 @@
                 </tr>
             @empty
                 <tr><td colspan="4" class="text-center" style="color:var(--gz-muted); padding:2rem;">
-                    <em>Chưa có nhân viên</em>
+                    <em>{{ __('Chưa có nhân viên') }}</em>
                 </td></tr>
             @endforelse
             </tbody>
@@ -128,9 +128,9 @@
 
         <div class="d-flex justify-content-between align-items-center mt-3 pt-3"
              style="border-top:1px solid var(--gz-rule);">
-            <small class="text-muted"><em>{{ $employees->count() }} nhân viên · Ngày {{ $date->format('d/m/Y') }}</em></small>
+            <small class="text-muted"><em>{{ $employees->count() }} {{ __('nhân viên') }} · {{ __('Ngày') }} {{ $date->format('d/m/Y') }}</em></small>
             <button type="submit" class="btn btn-primary btn-lg">
-                <i class="bi bi-save-fill"></i> Lưu Chấm Công
+                <i class="bi bi-save-fill"></i> {{ __('Lưu Chấm Công') }}
             </button>
         </div>
     </form>
@@ -138,16 +138,21 @@
 
 @push('scripts')
 <script>
-function fillAll(value) {
-    document.querySelectorAll('[data-emp]').forEach(group => {
-        const empId = group.dataset.emp;
-        group.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
-        if (value) {
-            const target = document.getElementById(`r_${empId}_${value}`);
-            if (target) target.checked = true;
-        }
+(function () {
+    function fillAll(value) {
+        document.querySelectorAll('[data-emp]').forEach(group => {
+            const empId = group.dataset.emp;
+            group.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+            if (value) {
+                const target = document.getElementById(`r_${empId}_${value}`);
+                if (target) target.checked = true;
+            }
+        });
+    }
+    document.querySelectorAll('.js-fill-all').forEach(btn => {
+        btn.addEventListener('click', () => fillAll(btn.dataset.value || ''));
     });
-}
+})();
 </script>
 @endpush
 @endsection

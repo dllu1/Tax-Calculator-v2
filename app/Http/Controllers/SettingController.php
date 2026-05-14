@@ -45,8 +45,13 @@ class SettingController extends Controller
             $this->settings->set($key, $value);
         }
 
-        return redirect()->route('settings.index')
-            ->with('success', 'Đã lưu cấu hình. Bảng lương sẽ tính lại theo công thức mới.');
+        $msg = __('Đã lưu cấu hình. Bảng lương sẽ tính lại theo công thức mới.');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg]);
+        }
+
+        return redirect()->route('settings.index')->with('success', $msg);
     }
 
     /**
@@ -78,14 +83,19 @@ class SettingController extends Controller
 
         $this->settings->set('tax.brackets', $brackets);
 
-        return redirect()->route('settings.index')
-            ->with('success', 'Đã cập nhật biểu thuế lũy tiến.');
+        $msg = __('Đã cập nhật biểu thuế lũy tiến.');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg, 'brackets' => $brackets]);
+        }
+
+        return redirect()->route('settings.index')->with('success', $msg);
     }
 
     /**
      * Đưa toàn bộ cấu hình về giá trị mặc định.
      */
-    public function reset()
+    public function reset(Request $request)
     {
         foreach (SettingService::defaults() as $key => $config) {
             $setting = Setting::where('key', $key)->first();
@@ -96,7 +106,12 @@ class SettingController extends Controller
         }
         $this->settings->clearCache();
 
-        return redirect()->route('settings.index')
-            ->with('success', 'Đã khôi phục cấu hình mặc định.');
+        $msg = __('Đã khôi phục cấu hình mặc định.');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg]);
+        }
+
+        return redirect()->route('settings.index')->with('success', $msg);
     }
 }

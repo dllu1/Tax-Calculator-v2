@@ -45,6 +45,7 @@ class PayrollService
         $normalDays = $attendances->where('type', Attendance::TYPE_NORMAL)->count();
         $sundayDays = $attendances->where('type', Attendance::TYPE_SUNDAY)->count();
         $absentDays = $attendances->where('type', Attendance::TYPE_ABSENT)->count();
+        $halfDays = $attendances->where('type', Attendance::TYPE_HALF)->count();
 
         // Tăng ca
         $overtimeShifts = (int) $employee->overtimes()
@@ -78,18 +79,22 @@ class PayrollService
         // Tăng ca theo hệ số cấu hình
         $overtimeWage = round($dailyRate * $overtimeMultiplier * $overtimeShifts, 0);
 
-        // Tiền ăn (theo ngày có mặt thực tế = normal + sunday)
-        $mealShift = $mealPerDay * ($normalDays + $sundayDays);
+        // Tiền ăn (theo ngày có mặt thực tế = normal + sunday + half)
+        $mealShift = $mealPerDay * ($normalDays + $sundayDays + $halfDays);
         $mealOvertime = $mealPerOt * $overtimeShifts;
 
-        // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). Bỏ qua "leave" (nghỉ phép có lý do).
-        $diligence = $absentDays === 0 && ($normalDays + $sundayDays) > 0
+        // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). "leave" và "half" không phá chuyên cần.
+        $diligence = $absentDays === 0 && ($normalDays + $sundayDays + $halfDays) > 0
             ? (float) $employee->diligence_bonus
             : 0.0;
 
+        // Lương nửa ngày: mỗi ngày half-day = chuyên cần / 2 (theo cấu hình của người dùng)
+        $halfDayAmount = round($halfDays * ((float) $employee->diligence_bonus / 2), 0);
+
         // TỔNG THỰC NHẬN
         $totalIncome = $dayWage + $overtimeWage + $mealShift + $mealOvertime
-            + $productSalary + $diligence + $taxableAllowances + $nonTaxableAllowances;
+            + $productSalary + $diligence + $halfDayAmount
+            + $taxableAllowances + $nonTaxableAllowances;
 
         // === THUẾ TNCN ===
         // TN tính thuế = Lương căn bản + Lương SP + Phụ cấp chịu thuế
@@ -125,9 +130,9 @@ class PayrollService
 
         return DB::transaction(function () use (
             $employee, $year, $month,
-            $normalDays, $sundayDays, $absentDays, $overtimeShifts,
+            $normalDays, $sundayDays, $absentDays, $halfDays, $overtimeShifts,
             $dayWage, $overtimeWage, $mealShift, $mealOvertime,
-            $productSalary, $diligence, $taxableAllowances, $nonTaxableAllowances,
+            $productSalary, $diligence, $halfDayAmount, $taxableAllowances, $nonTaxableAllowances,
             $totalIncome, $taxableIncome, $personalDeduction, $dependentDeduction,
             $bhxhAmount, $assessableIncome, $pitAmount, $advance, $netSalary, $detail
         ) {
@@ -137,6 +142,7 @@ class PayrollService
                     'normal_days' => $normalDays,
                     'sunday_days' => $sundayDays,
                     'absent_days' => $absentDays,
+                    'half_days' => $halfDays,
                     'overtime_shifts' => $overtimeShifts,
                     'day_wage' => $dayWage,
                     'overtime_wage' => $overtimeWage,
@@ -144,6 +150,7 @@ class PayrollService
                     'meal_overtime' => $mealOvertime,
                     'product_salary' => $productSalary,
                     'diligence' => $diligence,
+                    'half_day_amount' => $halfDayAmount,
                     'taxable_allowances' => $taxableAllowances,
                     'non_taxable_allowances' => $nonTaxableAllowances,
                     'total_income' => $totalIncome,

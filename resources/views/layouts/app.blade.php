@@ -1,17 +1,26 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Niên Giám Lương') · Niên Giám Lương</title>
+    <title>@yield('title', __('Niên Giám Lương')) · {{ __('Niên Giám Lương') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        // Apply saved theme ASAP to avoid flash-of-wrong-theme
+        (function () {
+            try {
+                var t = localStorage.getItem('gz-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+        })();
+    </script>
     <style>
-        :root {
+        :root, [data-theme="light"] {
             --gz-bg:        #efe5cd;
             --gz-surface:   #faf3e1;
             --gz-surface-2: #f3e9cf;
@@ -26,6 +35,22 @@
             --gz-warning:   #8a5a1f;
             --gz-danger:    #7a1f1f;
         }
+        [data-theme="dark"] {
+            --gz-bg:        #1a1612;
+            --gz-surface:   #261f18;
+            --gz-surface-2: #322a23;
+            --gz-ink:       #ebe1cc;
+            --gz-ink-soft:  #d9cdaf;
+            --gz-muted:     #9e8f76;
+            --gz-rule:      #4a3f33;
+            --gz-rule-soft: #3a3128;
+            --gz-accent:    #d68a8a;
+            --gz-accent-2:  #f0a8a8;
+            --gz-success:   #95c5a3;
+            --gz-warning:   #d4a364;
+            --gz-danger:    #d68a8a;
+        }
+        html, body { transition: background 0.25s ease, color 0.25s ease; }
 
         html, body {
             background: var(--gz-bg);
@@ -91,6 +116,54 @@
         }
         .gz-masthead-title em { font-style: italic; font-weight: 500; }
         .gz-masthead-title a { color: var(--gz-ink); text-decoration: none; }
+
+        /* right column = tagline + controls */
+        .gz-masthead-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.9rem;
+        }
+        .gz-controls {
+            display: inline-flex;
+            gap: 0.35rem;
+            align-items: center;
+            border-left: 1px solid var(--gz-rule);
+            padding-left: 0.9rem;
+        }
+        .gz-ctrl-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--gz-rule);
+            background: var(--gz-surface);
+            color: var(--gz-ink);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        }
+        .gz-ctrl-btn:hover {
+            background: var(--gz-ink);
+            color: var(--gz-surface);
+            border-color: var(--gz-ink);
+        }
+        .gz-ctrl-btn.active {
+            background: var(--gz-accent);
+            color: #fff;
+            border-color: var(--gz-accent);
+        }
+        .gz-ctrl-btn i { font-size: 0.95rem; }
+        [data-theme="dark"] .gz-theme-light { display: inline-flex; }
+        [data-theme="dark"] .gz-theme-dark { display: none; }
+        [data-theme="light"] .gz-theme-light,
+        :root:not([data-theme="dark"]) .gz-theme-light { display: none; }
+        :root:not([data-theme="dark"]) .gz-theme-dark { display: inline-flex; }
 
         /* secondary rule under masthead */
         .gz-masthead-rule {
@@ -564,6 +637,7 @@
 
         /* attendance month grid colors (override badge-type-*) */
         .att-normal { background: #d6dfc8; color: var(--gz-ink); }
+        .att-half   { background: #c7d4dc; color: var(--gz-ink); }
         .att-sunday { background: #e8d8b0; color: var(--gz-ink); }
         .att-leave  { background: #d6cdc0; color: var(--gz-ink-soft); }
         .att-absent { background: #c9a8a3; color: #4a1414; }
@@ -679,19 +753,47 @@
         <div class="gz-masthead-inner">
             @php
                 $now = now();
-                $dow = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][$now->dayOfWeek];
-                $months = ['','Một','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười Một','Mười Hai'];
+                $locale = app()->getLocale();
+                if ($locale === 'en') {
+                    $dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][$now->dayOfWeek];
+                    $monthName = ['','January','February','March','April','May','June','July','August','September','October','November','December'][$now->month];
+                    $dateLine = $dow . ', ' . $monthName . ' ' . $now->day . ', ' . $now->year;
+                } else {
+                    $dow = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][$now->dayOfWeek];
+                    $months = ['','Một','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười Một','Mười Hai'];
+                    $dateLine = $dow . ', ' . $now->day . ' Tháng ' . $months[$now->month] . ', ' . $now->year;
+                }
             @endphp
             <div class="gz-masthead-meta">
-                Số <strong>01</strong> · Tập I<br>
-                {{ $dow }}, {{ $now->day }} Tháng {{ $months[$now->month] }}, {{ $now->year }}
+                {{ __('Số') }} <strong>01</strong> · {{ __('Tập I') }}<br>
+                {{ $dateLine }}
             </div>
             <h1 class="gz-masthead-title">
-                <a href="{{ route('home') }}">Niên Giám <em>Lương</em></a>
+                <a href="{{ route('home') }}">@if ($locale === 'en') <em>Salary</em> Gazette @else Niên Giám <em>Lương</em> @endif</a>
             </h1>
-            <div class="gz-masthead-meta right">
-                Máy tính TNCN<br>
-                & Quản lý lương
+            <div class="gz-masthead-right">
+                <div class="gz-masthead-meta right">
+                    {{ __('Máy tính TNCN') }}<br>
+                    {{ __('& Quản lý lương') }}
+                </div>
+                <div class="gz-controls no-print">
+                    {{-- Language toggle --}}
+                    <form action="{{ route('locale.switch', 'vi') }}" method="POST" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="gz-ctrl-btn {{ $locale === 'vi' ? 'active' : '' }}"
+                                title="Tiếng Việt">VI</button>
+                    </form>
+                    <form action="{{ route('locale.switch', 'en') }}" method="POST" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="gz-ctrl-btn {{ $locale === 'en' ? 'active' : '' }}"
+                                title="English">EN</button>
+                    </form>
+                    {{-- Theme toggle --}}
+                    <button type="button" id="themeToggle" class="gz-ctrl-btn" title="{{ __('Chế độ tối') }} / {{ __('Chế độ sáng') }}">
+                        <i class="bi bi-moon-stars gz-theme-dark"></i>
+                        <i class="bi bi-sun gz-theme-light"></i>
+                    </button>
+                </div>
             </div>
         </div>
         <div class="gz-masthead-rule"></div>
@@ -702,15 +804,16 @@
     <div class="container gz-nav-inner">
         <ul class="gz-nav-links">
             @php $rn = request()->route() ? request()->route()->getName() : ''; @endphp
-            <li><a href="{{ route('home') }}" class="{{ $rn === 'home' ? 'active' : '' }}">Trang Nhất</a></li>
-            <li><a href="{{ route('employees.index') }}" class="{{ str_starts_with($rn, 'employees.') ? 'active' : '' }}">Nhân Viên</a></li>
-            <li><a href="{{ route('attendance.index') }}" class="{{ str_starts_with($rn, 'attendance.') ? 'active' : '' }}">Chấm Công</a></li>
-            <li><a href="{{ route('payroll.index') }}" class="{{ str_starts_with($rn, 'payroll.') ? 'active' : '' }}">Bảng Lương</a></li>
-            <li><a href="{{ route('settings.index') }}" class="{{ str_starts_with($rn, 'settings.') ? 'active' : '' }}">Cấu Hình</a></li>
+            <li><a href="{{ route('home') }}" class="{{ $rn === 'home' ? 'active' : '' }}">{{ __('Trang Nhất') }}</a></li>
+            <li><a href="{{ route('employees.index') }}" class="{{ str_starts_with($rn, 'employees.') ? 'active' : '' }}">{{ __('Nhân Viên') }}</a></li>
+            <li><a href="{{ route('attendance.index') }}" class="{{ str_starts_with($rn, 'attendance.') ? 'active' : '' }}">{{ __('Chấm Công') }}</a></li>
+            <li><a href="{{ route('payroll.index') }}" class="{{ str_starts_with($rn, 'payroll.') ? 'active' : '' }}">{{ __('Bảng Lương') }}</a></li>
+            <li><a href="{{ route('settings.index') }}" class="{{ str_starts_with($rn, 'settings.') ? 'active' : '' }}">{{ __('Cấu Hình') }}</a></li>
+            <li><a href="{{ route('help.index') }}" class="{{ str_starts_with($rn, 'help.') ? 'active' : '' }}">{{ __('Hướng Dẫn') }}</a></li>
         </ul>
         <form action="{{ route('home.search') }}" method="POST" class="gz-search d-flex align-items-center">
             @csrf
-            <input name="code" placeholder="Tra cứu mã NV..." required>
+            <input name="code" placeholder="{{ __('Tra cứu mã NV...') }}" required>
             <button type="submit"><i class="bi bi-search"></i></button>
         </form>
     </div>
@@ -741,11 +844,178 @@
 </main>
 
 <footer class="gz-footer container">
-    Niên Giám Lương · Máy tính TNCN &amp; Quản lý lương · In ngày {{ now()->format('d/m/Y') }} ·
+    {{ __('Niên Giám Lương') }} · {{ __('Máy tính TNCN') }} {{ __('& Quản lý lương') }} ·
+    {{ __('In ngày') }} {{ now()->format('d/m/Y') }} ·
     Laravel {{ app()->version() }}
 </footer>
 
+{{-- Toast container for AJAX feedback --}}
+<div id="gz-toast-stack" class="no-print" style="position:fixed; top:1rem; right:1rem; z-index:9999; display:flex; flex-direction:column; gap:0.5rem; pointer-events:none;"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ===== Theme toggle (persists in localStorage) =====
+    (function () {
+        const root = document.documentElement;
+        const saved = localStorage.getItem('gz-theme') || 'light';
+        root.setAttribute('data-theme', saved);
+        const btn = document.getElementById('themeToggle');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                localStorage.setItem('gz-theme', next);
+            });
+        }
+    })();
+
+    // ===== Global AJAX helpers =====
+    window.GZ_I18N = {!! json_encode([
+        'saved' => __('Đã lưu'),
+        'deleted' => __('Đã xoá'),
+        'error' => __('Có lỗi xảy ra'),
+        'processing' => __('Đang xử lý...'),
+    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
+    window.GZ = (function () {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const T = window.GZ_I18N || {};
+
+        function toast(message, kind = 'success') {
+            const stack = document.getElementById('gz-toast-stack');
+            if (!stack) { console.log(message); return; }
+            const el = document.createElement('div');
+            const bg = kind === 'success' ? 'var(--gz-success, #2d5016)'
+                     : kind === 'error'   ? 'var(--gz-accent, #6b1d1d)'
+                     : 'var(--gz-ink, #2a2419)';
+            el.style.cssText = `pointer-events:auto; background:${bg}; color:#f7eedd; padding:0.7rem 1rem; min-width:200px; max-width:380px; box-shadow:0 4px 12px rgba(0,0,0,.18); font-size:0.92rem; border-left:4px solid rgba(255,255,255,.35); opacity:0; transform:translateX(8px); transition:all 0.2s ease;`;
+            el.textContent = message;
+            stack.appendChild(el);
+            requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; });
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(8px)';
+                setTimeout(() => el.remove(), 250);
+            }, 2800);
+        }
+
+        async function fetchJson(url, options = {}) {
+            const opts = Object.assign({
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                credentials: 'same-origin',
+            }, options);
+            const res = await fetch(url, opts);
+            const text = await res.text();
+            let json = null;
+            try { json = text ? JSON.parse(text) : {}; } catch (_) { json = { _raw: text }; }
+            if (!res.ok) {
+                const msg = json?.message || json?._raw?.slice(0, 200) || `HTTP ${res.status}`;
+                throw new Error(msg);
+            }
+            return json;
+        }
+
+        async function submitForm(form, opts = {}) {
+            const action = form.getAttribute('action') || location.href;
+            const method = (form.getAttribute('method') || 'POST').toUpperCase();
+            const fd = new FormData(form);
+            // Honor Laravel's method spoofing via _method
+            const spoof = fd.get('_method');
+            const finalMethod = spoof ? String(spoof).toUpperCase() : method;
+            const submitBtn = form.querySelector('button[type=submit], input[type=submit]');
+            const oldLabel = submitBtn?.innerHTML;
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.gzBusy = '1'; }
+            try {
+                const data = await fetchJson(action, { method: finalMethod, body: fd });
+                if (opts.onSuccess) opts.onSuccess(data, form);
+                toast(data?.message || T.saved || 'Saved', 'success');
+                return data;
+            } catch (e) {
+                toast(e.message || T.error || 'Error', 'error');
+                throw e;
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (oldLabel) submitBtn.innerHTML = oldLabel;
+                    delete submitBtn.dataset.gzBusy;
+                }
+            }
+        }
+
+        async function ajaxDelete(url, opts = {}) {
+            const fd = new FormData();
+            fd.append('_method', 'DELETE');
+            try {
+                const data = await fetchJson(url, { method: 'POST', body: fd });
+                if (opts.onSuccess) opts.onSuccess(data);
+                toast(data?.message || T.deleted || 'Deleted', 'success');
+                return data;
+            } catch (e) {
+                toast(e.message || T.error || 'Error', 'error');
+                throw e;
+            }
+        }
+
+        async function softReload() {
+            try {
+                const res = await fetch(location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                });
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const newMain = doc.querySelector('main');
+                const curMain = document.querySelector('main');
+                if (newMain && curMain) {
+                    curMain.replaceWith(newMain);
+                }
+            } catch (e) {
+                console.warn('Soft reload failed:', e);
+            }
+        }
+
+        // Auto-wire: any <form data-ajax="true"> intercepts submit
+        document.addEventListener('submit', (e) => {
+            const form = e.target.closest('form[data-ajax="true"]');
+            if (!form) return;
+            e.preventDefault();
+            const confirmMsg = form.dataset.confirm;
+            if (confirmMsg && !confirm(confirmMsg)) return;
+            const softReloadAfter = form.dataset.softReload === 'true';
+            const resetAfter = form.dataset.resetAfter === 'true';
+            submitForm(form).then((data) => {
+                if (resetAfter) form.reset();
+                if (softReloadAfter) softReload();
+            }).catch(() => {});
+        });
+
+        // Auto-wire: any element with [data-ajax-delete] sends DELETE on click
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-ajax-delete]');
+            if (!btn) return;
+            e.preventDefault();
+            const url = btn.dataset.ajaxDelete || btn.getAttribute('href');
+            const confirmMsg = btn.dataset.confirm;
+            if (confirmMsg && !confirm(confirmMsg)) return;
+            const rowSelector = btn.dataset.removeRow;
+            const softReloadAfter = btn.dataset.softReload === 'true';
+            ajaxDelete(url, {
+                onSuccess: () => {
+                    if (rowSelector) {
+                        const row = btn.closest(rowSelector);
+                        if (row) row.remove();
+                    }
+                    if (softReloadAfter) softReload();
+                }
+            }).catch(() => {});
+        });
+
+        return { toast, fetchJson, submitForm, ajaxDelete, softReload };
+    })();
+</script>
 @stack('scripts')
 </body>
 </html>

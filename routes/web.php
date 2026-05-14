@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
@@ -39,3 +41,8 @@ Route::get('/settings', [SettingController::class, 'index'])->name('settings.ind
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 Route::put('/settings/brackets', [SettingController::class, 'updateBrackets'])->name('settings.brackets.update');
 Route::post('/settings/reset', [SettingController::class, 'reset'])->name('settings.reset');
+
+Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+Route::post('/locale/{locale}', [LocaleController::class, 'switch'])
+    ->whereIn('locale', ['vi', 'en'])
+    ->name('locale.switch');

@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Phiếu lương '.$employee->full_name)
+@section('title', __('Phiếu lương').' '.$employee->full_name)
 
 @php
     $fmt = fn($n) => number_format($n, 0, ',', '.');
@@ -16,60 +16,60 @@
 
 {{-- ===================== HEADER ===================== --}}
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>I</em> Thông Số Đầu Vào</span>
+    <span class="gz-section-rule-text"><em>I</em> {{ __('Thông Số Đầu Vào') }}</span>
 </div>
 
 <div class="gz-card-head" style="margin-bottom: 1rem;">
     <div>
         <h2 class="gz-section-title mb-1">
-            Phiếu lương: {{ $employee->full_name }}
+            {{ __('Phiếu lương: ') }}{{ $employee->full_name }}
             <span class="badge solid">{{ $employee->employee_code }}</span>
         </h2>
         <p class="gz-section-lede mb-0">
             {{ $employee->position }} · {{ $employee->department }} ·
-            Người phụ thuộc: <strong>{{ $employee->dependents }}</strong> ·
-            Tháng <strong>{{ $month }}/{{ $year }}</strong>
+            {{ __('Người phụ thuộc:') }} <strong>{{ $employee->dependents }}</strong> ·
+            {{ __('Tháng') }} <strong>{{ $month }}/{{ $year }}</strong>
         </p>
     </div>
     <div class="d-flex gap-2 align-items-end no-print">
         <select class="form-select form-select-sm" id="month-nav"
                 data-base="{{ route('payroll.show', [$employee->id, $year, 0]) }}">
             @for ($m=1; $m<=12; $m++)
-                <option value="{{ $m }}" @selected($m == $month)>Tháng {{ $m }}/{{ $year }}</option>
+                <option value="{{ $m }}" @selected($m == $month)>{{ __('Tháng') }} {{ $m }}/{{ $year }}</option>
             @endfor
         </select>
         <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
-            <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+            <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
     </div>
 </div>
 
 {{-- ===================== KẾT QUẢ — FIGURE LỚN ===================== --}}
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>II</em> Bản Tổng Kê Kỳ Lương</span>
+    <span class="gz-section-rule-text"><em>II</em> {{ __('Bản Tổng Kê Kỳ Lương') }}</span>
 </div>
 
 <div class="row g-3">
     <div class="col-md-6">
         <div class="gz-card">
-            <div class="gz-label">Thực nhận (Net)</div>
+            <div class="gz-label">{{ __('Thực nhận (Net)') }}</div>
             <div class="gz-figure gz-figure-success">
-                {{ $fmt($payroll->net_salary) }}<span class="gz-figure-unit">₫/tháng</span>
+                {{ $fmt($payroll->net_salary) }}<span class="gz-figure-unit">{{ __('₫/tháng') }}</span>
             </div>
             <div class="gz-figure-caption">
-                ≈ {{ $fmt($payroll->net_salary * 12) }} ₫/năm · Tỷ lệ giữ lại {{ $keepRatio }}%
+                ≈ {{ $fmt($payroll->net_salary * 12) }} {{ __('₫/năm') }} · {{ __('Tỷ lệ giữ lại') }} {{ $keepRatio }}%
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="gz-card">
-            <div class="gz-label">Thuế TNCN phải nộp</div>
+            <div class="gz-label">{{ __('Thuế TNCN phải nộp') }}</div>
             <div class="gz-figure gz-figure-accent">
-                {{ $fmt($payroll->pit_amount) }}<span class="gz-figure-unit">₫/tháng</span>
+                {{ $fmt($payroll->pit_amount) }}<span class="gz-figure-unit">{{ __('₫/tháng') }}</span>
             </div>
             <div class="gz-figure-caption">
-                Thuế suất hiệu quả {{ $effectiveRate }}% ·
-                Biên {{ (int) round(($payroll->detail['pit_rate'] ?? 0) * 100) }}%
+                {{ __('Thuế suất hiệu quả') }} {{ $effectiveRate }}% ·
+                {{ __('Biên') }} {{ (int) round(($payroll->detail['pit_rate'] ?? 0) * 100) }}%
             </div>
         </div>
     </div>
@@ -79,10 +79,10 @@
 <div class="row g-0 gz-card gz-card-flush">
     @php
         $cells = [
-            ['Tổng thực nhận', $fmt($payroll->total_income)],
-            ['BHXH (10,5%)', $fmt($payroll->bhxh_amount)],
-            ['Giảm trừ gia cảnh', $fmt($payroll->personal_deduction + $payroll->dependent_deduction)],
-            ['TN tính thuế', $fmt($payroll->assessable_income)],
+            [__('Tổng thực nhận'), $fmt($payroll->total_income)],
+            [__('BHXH').' (10,5%)', $fmt($payroll->bhxh_amount)],
+            [__('Giảm trừ gia cảnh'), $fmt($payroll->personal_deduction + $payroll->dependent_deduction)],
+            [__('TN tính thuế'), $fmt($payroll->assessable_income)],
         ];
     @endphp
     @foreach ($cells as $c)
@@ -95,18 +95,18 @@
 
 {{-- ===================== DÒNG TIỀN THÁNG ===================== --}}
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>III</em> Trước &amp; Sau Khấu Trừ — Dòng Tiền Tháng</span>
+    <span class="gz-section-rule-text"><em>III</em> {{ __('Trước & Sau Khấu Trừ — Dòng Tiền Tháng') }}</span>
 </div>
 
 <div class="gz-card gz-card-flush gz-cashflow">
     <div class="row g-0">
         @php
             $flow = [
-                ['01', 'Tổng thực nhận', $fmt($payroll->total_income), null],
-                ['02', 'Trừ BHXH/BHYT/BHTN (10,5%)', $fmt($payroll->total_income - $payroll->bhxh_amount), '−'.$fmt($payroll->bhxh_amount)],
-                ['03', 'Trừ giảm trừ gia cảnh', $fmt($payroll->assessable_income), '−'.$fmt($payroll->personal_deduction + $payroll->dependent_deduction)],
-                ['04', 'Thuế TNCN lũy tiến', $fmt($payroll->pit_amount), '−'.$fmt($payroll->pit_amount)],
-                ['05', 'Thực nhận', $fmt($payroll->net_salary), null, true],
+                ['01', __('Tổng thực nhận'), $fmt($payroll->total_income), null],
+                ['02', __('Trừ BHXH/BHYT/BHTN (10,5%)'), $fmt($payroll->total_income - $payroll->bhxh_amount), '−'.$fmt($payroll->bhxh_amount)],
+                ['03', __('Trừ giảm trừ gia cảnh'), $fmt($payroll->assessable_income), '−'.$fmt($payroll->personal_deduction + $payroll->dependent_deduction)],
+                ['04', __('Thuế TNCN lũy tiến'), $fmt($payroll->pit_amount), '−'.$fmt($payroll->pit_amount)],
+                ['05', __('Thực nhận'), $fmt($payroll->net_salary), null, true],
             ];
         @endphp
         @foreach ($flow as $f)
@@ -122,13 +122,13 @@
     </div>
 </div>
 <div class="mb-3" style="font-size:0.85rem; color:var(--gz-muted); font-style:italic;">
-    Tỷ lệ giữ lại: <strong style="color:var(--gz-ink);">{{ $keepRatio }}%</strong> ·
-    Mất do thuế &amp; BH: <strong style="color:var(--gz-accent);">{{ $lossRatio }}%</strong>
+    {{ __('Tỷ lệ giữ lại') }}: <strong style="color:var(--gz-ink);">{{ $keepRatio }}%</strong> ·
+    {{ __('Mất do thuế & BH:') }} <strong style="color:var(--gz-accent);">{{ $lossRatio }}%</strong>
 </div>
 
 {{-- ===================== CHI TIẾT 2 CỘT ===================== --}}
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>IV</em> Chi Tiết Tính Toán</span>
+    <span class="gz-section-rule-text"><em>IV</em> {{ __('Chi Tiết Tính Toán') }}</span>
 </div>
 
 <div class="row g-3">
@@ -136,36 +136,37 @@
     <div class="col-md-7">
         <div class="gz-card">
             <div class="gz-card-head" style="margin-bottom: 0.4rem;">
-                <h4 class="mb-0">Cấu thành tiền lương</h4>
-                <span class="gz-label">Tháng {{ $month }}/{{ $year }}</span>
+                <h4 class="mb-0">{{ __('Cấu thành tiền lương') }}</h4>
+                <span class="gz-label">{{ __('Tháng') }} {{ $month }}/{{ $year }}</span>
             </div>
             <table class="gz-ledger">
-                <tr class="section"><td colspan="2">Công &amp; tăng ca</td></tr>
-                <tr><td>Ngày công thường</td><td>{{ $payroll->normal_days }} ngày</td></tr>
-                <tr><td>Ngày chủ nhật <em>(×{{ $payroll->detail['config']['sunday_multiplier'] ?? 2 }})</em></td><td>{{ $payroll->sunday_days }} ngày</td></tr>
-                <tr><td>Số ca tăng ca <em>(3h = ½ ngày)</em></td><td>{{ $payroll->overtime_shifts }} ca</td></tr>
+                <tr class="section"><td colspan="2">{{ __('Công & tăng ca') }}</td></tr>
+                <tr><td>{{ __('Ngày công thường') }}</td><td>{{ $payroll->normal_days }} {{ __('ngày') }}</td></tr>
+                <tr><td>{{ __('Ngày chủ nhật') }} <em>(×{{ $payroll->detail['config']['sunday_multiplier'] ?? 2 }})</em></td><td>{{ $payroll->sunday_days }} {{ __('ngày') }}</td></tr>
+                <tr><td>{{ __('Số ca tăng ca') }} <em>(3h = ½ {{ __('ngày') }})</em></td><td>{{ $payroll->overtime_shifts }} {{ __('ca') }}</td></tr>
                 @if ($payroll->absent_days > 0)
-                <tr class="minus"><td>Ngày nghỉ không phép</td><td>{{ $payroll->absent_days }}</td></tr>
+                <tr class="minus"><td>{{ __('Ngày nghỉ không phép') }}</td><td>{{ $payroll->absent_days }}</td></tr>
                 @endif
 
-                <tr class="section"><td colspan="2">Các khoản thu nhập</td></tr>
-                <tr><td>Lương ngày công</td><td>{{ $fmt($payroll->day_wage) }}</td></tr>
-                <tr><td>Lương tăng ca</td><td>{{ $fmt($payroll->overtime_wage) }}</td></tr>
-                <tr><td>Tiền ăn giữa ca</td><td>{{ $fmt($payroll->meal_shift) }}</td></tr>
-                <tr><td>Tiền ăn tăng ca</td><td>{{ $fmt($payroll->meal_overtime) }}</td></tr>
-                <tr><td>Lương sản phẩm</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
-                <tr><td>Chuyên cần</td><td>{{ $fmt($payroll->diligence) }}</td></tr>
-                <tr><td>Phụ cấp chịu thuế</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
-                <tr><td>Phụ cấp không chịu thuế</td><td>{{ $fmt($payroll->non_taxable_allowances) }}</td></tr>
+                <tr class="section"><td colspan="2">{{ __('Các khoản thu nhập') }}</td></tr>
+                <tr><td>{{ __('Lương ngày công') }}</td><td>{{ $fmt($payroll->day_wage) }}</td></tr>
+                <tr><td>{{ __('Lương tăng ca') }}</td><td>{{ $fmt($payroll->overtime_wage) }}</td></tr>
+                <tr><td>{{ __('Tiền ăn giữa ca') }}</td><td>{{ $fmt($payroll->meal_shift) }}</td></tr>
+                <tr><td>{{ __('Tiền ăn tăng ca') }}</td><td>{{ $fmt($payroll->meal_overtime) }}</td></tr>
+                <tr><td>{{ __('Lương sản phẩm') }}</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
+                <tr><td>{{ __('Chuyên cần') }}</td><td>{{ $fmt($payroll->diligence) }}</td></tr>
+                <tr><td>{{ __('Lương nửa ngày') }} <small class="text-muted">({{ $payroll->half_days ?? 0 }} {{ __('nửa ngày') }} × ½ {{ __('chuyên cần') }})</small></td><td>{{ $fmt($payroll->half_day_amount ?? 0) }}</td></tr>
+                <tr><td>{{ __('Phụ cấp chịu thuế') }}</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
+                <tr><td>{{ __('Phụ cấp không chịu thuế') }}</td><td>{{ $fmt($payroll->non_taxable_allowances) }}</td></tr>
 
-                <tr class="total"><td>Tổng thực nhận</td><td>{{ $fmt($payroll->total_income) }}</td></tr>
+                <tr class="total"><td>{{ __('Tổng thực nhận') }}</td><td>{{ $fmt($payroll->total_income) }}</td></tr>
 
-                <tr class="section"><td colspan="2">Khấu trừ</td></tr>
-                <tr class="minus"><td>BHXH (10,5% × {{ $fmt($employee->bhxh_salary) }})</td><td>−{{ $fmt($payroll->bhxh_amount) }}</td></tr>
-                <tr class="minus"><td>Thuế TNCN</td><td>−{{ $fmt($payroll->pit_amount) }}</td></tr>
-                <tr class="minus"><td>Tạm ứng</td><td>−{{ $fmt($payroll->advance) }}</td></tr>
+                <tr class="section"><td colspan="2">{{ __('Khấu trừ') }}</td></tr>
+                <tr class="minus"><td>{{ __('BHXH') }} (10,5% × {{ $fmt($employee->bhxh_salary) }})</td><td>−{{ $fmt($payroll->bhxh_amount) }}</td></tr>
+                <tr class="minus"><td>{{ __('Thuế TNCN') }}</td><td>−{{ $fmt($payroll->pit_amount) }}</td></tr>
+                <tr class="minus"><td>{{ __('Tạm ứng') }}</td><td>−{{ $fmt($payroll->advance) }}</td></tr>
 
-                <tr class="total plus"><td>Tiền lương còn lại</td><td>{{ $fmt($payroll->net_salary) }}</td></tr>
+                <tr class="total plus"><td>{{ __('Tiền lương còn lại') }}</td><td>{{ $fmt($payroll->net_salary) }}</td></tr>
             </table>
         </div>
     </div>
@@ -174,27 +175,27 @@
     <div class="col-md-5">
         <div class="gz-card">
             <div class="gz-card-head" style="margin-bottom: 0.4rem;">
-                <h4 class="mb-0">Tính thuế TNCN</h4>
-                <span class="gz-label">5 bậc lũy tiến</span>
+                <h4 class="mb-0">{{ __('Tính thuế TNCN') }}</h4>
+                <span class="gz-label">{{ __('5 bậc lũy tiến') }}</span>
             </div>
             <table class="gz-ledger">
-                <tr><td>Lương căn bản</td><td>{{ $fmt($employee->basic_salary) }}</td></tr>
-                <tr><td>+ Lương sản phẩm</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
-                <tr><td>+ Phụ cấp chịu thuế</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
-                <tr class="total"><td>= Thu nhập tính thuế</td><td>{{ $fmt($payroll->taxable_income) }}</td></tr>
+                <tr><td>{{ __('Lương căn bản') }}</td><td>{{ $fmt($employee->basic_salary) }}</td></tr>
+                <tr><td>{{ __('+ Lương sản phẩm') }}</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
+                <tr><td>{{ __('+ Phụ cấp chịu thuế') }}</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
+                <tr class="total"><td>{{ __('= Thu nhập tính thuế') }}</td><td>{{ $fmt($payroll->taxable_income) }}</td></tr>
 
-                <tr class="plus"><td>− Giảm trừ bản thân</td><td>{{ $fmt($payroll->personal_deduction) }}</td></tr>
-                <tr class="plus"><td>− Giảm trừ NPT ({{ $employee->dependents }} người)</td><td>{{ $fmt($payroll->dependent_deduction) }}</td></tr>
-                <tr class="plus"><td>− BHXH 10,5%</td><td>{{ $fmt($payroll->bhxh_amount) }}</td></tr>
+                <tr class="plus"><td>{{ __('− Giảm trừ bản thân') }}</td><td>{{ $fmt($payroll->personal_deduction) }}</td></tr>
+                <tr class="plus"><td>{{ __('− Giảm trừ NPT') }} ({{ $employee->dependents }} {{ __('người)') }}</td><td>{{ $fmt($payroll->dependent_deduction) }}</td></tr>
+                <tr class="plus"><td>{{ __('− BHXH 10,5%') }}</td><td>{{ $fmt($payroll->bhxh_amount) }}</td></tr>
 
-                <tr class="total"><td>= Thu nhập chịu thuế</td><td>{{ $fmt($payroll->assessable_income) }}</td></tr>
-                <tr class="total minus"><td>Thuế TNCN phải nộp</td><td>{{ $fmt($payroll->pit_amount) }}</td></tr>
+                <tr class="total"><td>{{ __('= Thu nhập chịu thuế') }}</td><td>{{ $fmt($payroll->assessable_income) }}</td></tr>
+                <tr class="total minus"><td>{{ __('Thuế TNCN phải nộp') }}</td><td>{{ $fmt($payroll->pit_amount) }}</td></tr>
             </table>
 
             @if (!empty($payroll->detail['pit_rate']))
                 <p class="mt-3 mb-0" style="font-size:0.85rem; color:var(--gz-muted); font-style:italic;">
-                    Áp bậc thuế <strong style="color:var(--gz-ink);">{{ (int) round($payroll->detail['pit_rate'] * 100) }}%</strong> ·
-                    Khấu trừ {{ $fmt($payroll->detail['pit_deduction']) }} ₫
+                    {{ __('Áp bậc thuế') }} <strong style="color:var(--gz-ink);">{{ (int) round($payroll->detail['pit_rate'] * 100) }}%</strong> ·
+                    {{ __('Khấu trừ ') }}{{ $fmt($payroll->detail['pit_deduction']) }} ₫
                 </p>
             @endif
         </div>
@@ -203,90 +204,93 @@
 
 {{-- ===================== QUẢN LÝ DỮ LIỆU THÁNG ===================== --}}
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>V</em> Điều Chỉnh Dữ Liệu Tháng</span>
+    <span class="gz-section-rule-text"><em>V</em> {{ __('Điều Chỉnh Dữ Liệu Tháng') }}</span>
 </div>
 
 <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-product">
-        Lương sản phẩm</button></li>
+        {{ __('Lương sản phẩm') }}</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-allowance">
-        Phụ cấp</button></li>
+        {{ __('Phụ cấp') }}</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-advance">
-        Tạm ứng</button></li>
+        {{ __('Tạm ứng') }}</button></li>
 </ul>
 
 <div class="tab-content gz-tab-body">
     {{-- Tab Lương SP --}}
     <div class="tab-pane fade show active" id="tab-product">
-        <form method="POST" action="{{ route('product-salary.store', $employee) }}" class="row g-2 align-items-end">
+        <form method="POST" action="{{ route('product-salary.store', $employee) }}" class="row g-2 align-items-end"
+              data-ajax="true" data-soft-reload="true">
             @csrf
             <input type="hidden" name="year" value="{{ $year }}">
             <input type="hidden" name="month" value="{{ $month }}">
             <div class="col-md-4">
-                <label class="form-label">Số tiền lương SP</label>
+                <label class="form-label">{{ __('Số tiền lương SP') }}</label>
                 <input type="number" step="1000" name="amount" class="form-control"
                        value="{{ $productSalary?->amount ?? 0 }}" required>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Ghi chú</label>
+                <label class="form-label">{{ __('Ghi chú') }}</label>
                 <input name="note" class="form-control" value="{{ $productSalary?->note }}">
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100"><i class="bi bi-save"></i> Lưu</button>
+                <button class="btn btn-primary w-100"><i class="bi bi-save"></i> {{ __('Lưu') }}</button>
             </div>
         </form>
     </div>
 
     {{-- Tab Phụ cấp --}}
     <div class="tab-pane fade" id="tab-allowance">
-        <form method="POST" action="{{ route('allowance.store', $employee) }}" class="row g-2 align-items-end mb-3">
+        <form method="POST" action="{{ route('allowance.store', $employee) }}" class="row g-2 align-items-end mb-3"
+              data-ajax="true" data-soft-reload="true" data-reset-after="true">
             @csrf
             <input type="hidden" name="year" value="{{ $year }}">
             <input type="hidden" name="month" value="{{ $month }}">
             <div class="col-md-3">
-                <label class="form-label">Tên phụ cấp</label>
-                <input name="name" class="form-control" placeholder="VD: Xăng xe" required>
+                <label class="form-label">{{ __('Tên phụ cấp') }}</label>
+                <input name="name" class="form-control" placeholder="{{ __('VD: Xăng xe') }}" required>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Loại</label>
+                <label class="form-label">{{ __('Loại') }}</label>
                 <select name="type" class="form-select" required>
-                    <option value="taxable">Có thuế (cộng vào TNTT)</option>
-                    <option value="non_taxable">Không thuế</option>
+                    <option value="taxable">{{ __('Có thuế (cộng vào TNTT)') }}</option>
+                    <option value="non_taxable">{{ __('Không thuế') }}</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Số tiền</label>
+                <label class="form-label">{{ __('Số tiền') }}</label>
                 <input type="number" step="1000" name="amount" class="form-control" required>
             </div>
             <div class="col-md-3">
-                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Thêm</button>
+                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> {{ __('Thêm') }}</button>
             </div>
         </form>
         <table class="gz-table">
-            <thead><tr><th>Tên</th><th>Loại</th><th class="money">Số tiền</th><th></th></tr></thead>
+            <thead><tr><th>{{ __('Tên') }}</th><th>{{ __('Loại') }}</th><th class="money">{{ __('Số tiền') }}</th><th></th></tr></thead>
             <tbody>
             @forelse ($allowances as $a)
                 <tr>
                     <td>{{ $a->name }}</td>
                     <td>
                         @if ($a->type === 'taxable')
-                            <span class="badge bg-warning">Có thuế</span>
+                            <span class="badge bg-warning">{{ __('Có thuế') }}</span>
                         @else
-                            <span class="badge bg-success">Không thuế</span>
+                            <span class="badge bg-success">{{ __('Không thuế') }}</span>
                         @endif
                     </td>
                     <td class="money">{{ $fmt($a->amount) }}</td>
                     <td class="text-end">
                         <div class="gz-actions">
-                            <form method="POST" action="{{ route('allowance.destroy', $a) }}">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger" title="Xóa phụ cấp"><i class="bi bi-trash"></i></button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="{{ __('Xóa phụ cấp') }}"
+                                    data-ajax-delete="{{ route('allowance.destroy', $a) }}"
+                                    data-soft-reload="true">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="text-center" style="color:var(--gz-muted);"><em>Chưa có phụ cấp</em></td></tr>
+                <tr><td colspan="4" class="text-center" style="color:var(--gz-muted);"><em>{{ __('Chưa có phụ cấp') }}</em></td></tr>
             @endforelse
             </tbody>
         </table>
@@ -294,28 +298,29 @@
 
     {{-- Tab Tạm ứng --}}
     <div class="tab-pane fade" id="tab-advance">
-        <form method="POST" action="{{ route('advance.store', $employee) }}" class="row g-2 align-items-end mb-3">
+        <form method="POST" action="{{ route('advance.store', $employee) }}" class="row g-2 align-items-end mb-3"
+              data-ajax="true" data-soft-reload="true" data-reset-after="true">
             @csrf
             <input type="hidden" name="year" value="{{ $year }}">
             <input type="hidden" name="month" value="{{ $month }}">
             <div class="col-md-3">
-                <label class="form-label">Số tiền tạm ứng</label>
+                <label class="form-label">{{ __('Số tiền tạm ứng') }}</label>
                 <input type="number" step="1000" name="amount" class="form-control" required>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Ngày tạm ứng</label>
+                <label class="form-label">{{ __('Ngày tạm ứng') }}</label>
                 <input type="date" name="advance_date" class="form-control">
             </div>
             <div class="col-md-4">
-                <label class="form-label">Ghi chú</label>
+                <label class="form-label">{{ __('Ghi chú') }}</label>
                 <input name="note" class="form-control">
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Thêm</button>
+                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> {{ __('Thêm') }}</button>
             </div>
         </form>
         <table class="gz-table">
-            <thead><tr><th>Ngày</th><th class="money">Số tiền</th><th>Ghi chú</th><th></th></tr></thead>
+            <thead><tr><th>{{ __('Ngày') }}</th><th class="money">{{ __('Số tiền') }}</th><th>{{ __('Ghi chú') }}</th><th></th></tr></thead>
             <tbody>
             @forelse ($advances as $a)
                 <tr>
@@ -324,15 +329,16 @@
                     <td><em>{{ $a->note }}</em></td>
                     <td class="text-end">
                         <div class="gz-actions">
-                            <form method="POST" action="{{ route('advance.destroy', $a) }}">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger" title="Xóa tạm ứng"><i class="bi bi-trash"></i></button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="{{ __('Xóa tạm ứng') }}"
+                                    data-ajax-delete="{{ route('advance.destroy', $a) }}"
+                                    data-soft-reload="true">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="text-center" style="color:var(--gz-muted);"><em>Chưa có tạm ứng</em></td></tr>
+                <tr><td colspan="4" class="text-center" style="color:var(--gz-muted);"><em>{{ __('Chưa có tạm ứng') }}</em></td></tr>
             @endforelse
             </tbody>
         </table>
@@ -345,6 +351,10 @@
         const base = this.dataset.base;
         location.href = base.replace(/\/0$/, '/' + this.value);
     });
+    // Tự động mở dialog in nếu URL có ?print=1
+    if (new URLSearchParams(location.search).get('print') === '1') {
+        window.addEventListener('load', () => setTimeout(() => window.print(), 400));
+    }
 </script>
 @endpush
 @endsection

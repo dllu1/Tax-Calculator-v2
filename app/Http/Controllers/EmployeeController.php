@@ -49,10 +49,17 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('success', 'Đã cập nhật');
     }
 
-    public function destroy(Employee $employee)
+    public function destroy(Request $request, Employee $employee)
     {
         $employee->delete();
-        return redirect()->route('employees.index')->with('success', 'Đã xóa nhân viên');
+
+        $msg = __('Đã xóa nhân viên');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg, 'id' => $employee->id]);
+        }
+
+        return redirect()->route('employees.index')->with('success', $msg);
     }
 
     public function template()

@@ -62,7 +62,7 @@ class PayrollController extends Controller
             ['employee_id' => $employee->id, 'year' => $data['year'], 'month' => $data['month']],
             ['amount' => $data['amount'], 'note' => $data['note'] ?? null]
         );
-        return back()->with('success', 'Đã lưu lương sản phẩm');
+        return $this->respond($request, __('Đã lưu lương sản phẩm'));
     }
 
     public function saveAllowance(Request $request, Employee $employee)
@@ -75,13 +75,13 @@ class PayrollController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
         Allowance::create($data + ['employee_id' => $employee->id]);
-        return back()->with('success', 'Đã thêm phụ cấp');
+        return $this->respond($request, __('Đã thêm phụ cấp'));
     }
 
-    public function deleteAllowance(Allowance $allowance)
+    public function deleteAllowance(Request $request, Allowance $allowance)
     {
         $allowance->delete();
-        return back()->with('success', 'Đã xóa phụ cấp');
+        return $this->respond($request, __('Đã xóa phụ cấp'));
     }
 
     public function saveAdvance(Request $request, Employee $employee)
@@ -94,12 +94,20 @@ class PayrollController extends Controller
             'note' => ['nullable', 'string'],
         ]);
         Advance::create($data + ['employee_id' => $employee->id]);
-        return back()->with('success', 'Đã thêm tạm ứng');
+        return $this->respond($request, __('Đã thêm tạm ứng'));
     }
 
-    public function deleteAdvance(Advance $advance)
+    public function deleteAdvance(Request $request, Advance $advance)
     {
         $advance->delete();
-        return back()->with('success', 'Đã xóa tạm ứng');
+        return $this->respond($request, __('Đã xóa tạm ứng'));
+    }
+
+    private function respond(Request $request, string $message)
+    {
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $message]);
+        }
+        return back()->with('success', $message);
     }
 }

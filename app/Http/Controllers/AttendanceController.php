@@ -70,8 +70,13 @@ class AttendanceController extends Controller
             }
         }
 
-        return redirect()->route('attendance.index', ['date' => $date])
-            ->with('success', 'Đã lưu chấm công ngày ' . Carbon::parse($date)->format('d/m/Y'));
+        $msg = __('Đã lưu chấm công ngày') . ' ' . Carbon::parse($date)->format('d/m/Y');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg]);
+        }
+
+        return redirect()->route('attendance.index', ['date' => $date])->with('success', $msg);
     }
 
     /**

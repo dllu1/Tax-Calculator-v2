@@ -1,34 +1,34 @@
 @extends('layouts.app')
-@section('title', 'Bảng lương '.$month.'/'.$year)
+@section('title', __('Bảng lương').' '.$month.'/'.$year)
 
 @php $fmt = fn($n) => number_format($n, 0, ',', '.'); @endphp
 
 @section('content')
 
 <div class="gz-section-rule">
-    <span class="gz-section-rule-text"><em>I</em> Bản Tổng Kê Tháng {{ $month }}/{{ $year }}</span>
+    <span class="gz-section-rule-text"><em>I</em> {{ __('Bản Tổng Kê Tháng') }} {{ $month }}/{{ $year }}</span>
 </div>
 
 <div class="gz-card-head" style="margin-bottom: 1rem;">
     <div>
-        <h2 class="gz-section-title mb-1">Bảng lương toàn công ty</h2>
+        <h2 class="gz-section-title mb-1">{{ __('Bảng lương toàn công ty') }}</h2>
         <p class="gz-section-lede mb-0">
-            Số liệu được tính lại tự động mỗi lần truy cập theo công thức hiện hành trong mục
-            <a href="{{ route('settings.index') }}">Cấu Hình</a>.
+            {{ __('Số liệu được tính lại tự động mỗi lần truy cập theo công thức hiện hành trong mục') }}
+            <a href="{{ route('settings.index') }}">{{ __('Cấu Hình') }}</a>.
         </p>
     </div>
     <div class="d-flex gap-2 align-items-end no-print">
         <form method="GET" class="d-flex gap-2 align-items-end">
             <select name="month" class="form-select form-select-sm">
                 @for ($m=1; $m<=12; $m++)
-                    <option value="{{ $m }}" @selected($m == $month)>Tháng {{ $m }}</option>
+                    <option value="{{ $m }}" @selected($m == $month)>{{ __('Tháng') }} {{ $m }}</option>
                 @endfor
             </select>
             <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
-            <button class="btn btn-sm btn-outline-primary">Tính Lại</button>
+            <button class="btn btn-sm btn-outline-primary">{{ __('Tính Lại') }}</button>
         </form>
         <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
-            <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+            <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
     </div>
 </div>
@@ -37,26 +37,26 @@
 <div class="row g-3 mb-3">
     <div class="col-md-4">
         <div class="gz-card gz-card-tight">
-            <div class="gz-label">Tổng thực nhận</div>
+            <div class="gz-label">{{ __('Tổng thực nhận') }}</div>
             <div class="gz-figure-sm">{{ $fmt($payrolls->sum('total_income')) }}
                 <span class="gz-figure-unit">₫</span></div>
-            <div class="gz-figure-caption">{{ $payrolls->count() }} nhân viên · trước trừ</div>
+            <div class="gz-figure-caption">{{ $payrolls->count() }} {{ __('nhân viên') }} · {{ __('trước trừ') }}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="gz-card gz-card-tight">
-            <div class="gz-label">Tổng thuế TNCN</div>
+            <div class="gz-label">{{ __('Tổng thuế TNCN') }}</div>
             <div class="gz-figure-sm gz-figure-accent">{{ $fmt($payrolls->sum('pit_amount')) }}
                 <span class="gz-figure-unit">₫</span></div>
-            <div class="gz-figure-caption">Lũy tiến năm bậc</div>
+            <div class="gz-figure-caption">{{ __('Lũy tiến năm bậc') }}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="gz-card gz-card-tight">
-            <div class="gz-label">Tổng lương còn lại</div>
+            <div class="gz-label">{{ __('Tổng lương còn lại') }}</div>
             <div class="gz-figure-sm gz-figure-success">{{ $fmt($payrolls->sum('net_salary')) }}
                 <span class="gz-figure-unit">₫</span></div>
-            <div class="gz-figure-caption">Sau khấu trừ &amp; tạm ứng</div>
+            <div class="gz-figure-caption">{{ __('Sau khấu trừ & tạm ứng') }}</div>
         </div>
     </div>
 </div>
@@ -66,16 +66,16 @@
     <table class="gz-table">
         <thead>
             <tr>
-                <th style="width:80px">Mã NV</th>
-                <th>Họ tên</th>
-                <th class="num" style="width:60px">Thường</th>
-                <th class="num" style="width:50px">CN</th>
-                <th class="num" style="width:50px">TC</th>
-                <th class="money">Tổng thực nhận</th>
-                <th class="money">BHXH</th>
-                <th class="money">Thuế TNCN</th>
-                <th class="money">Tạm ứng</th>
-                <th class="money">Còn lại</th>
+                <th style="width:80px">{{ __('Mã NV') }}</th>
+                <th>{{ __('Họ tên') }}</th>
+                <th class="num" style="width:60px">{{ __('Thường') }}</th>
+                <th class="num" style="width:50px">{{ __('CN') }}</th>
+                <th class="num" style="width:50px">{{ __('TC') }}</th>
+                <th class="money">{{ __('Tổng thực nhận') }}</th>
+                <th class="money">{{ __('BHXH') }}</th>
+                <th class="money">{{ __('Thuế TNCN') }}</th>
+                <th class="money">{{ __('Tạm ứng') }}</th>
+                <th class="money">{{ __('Còn lại') }}</th>
                 <th style="width:42px"></th>
             </tr>
         </thead>
@@ -93,22 +93,29 @@
                 <td class="money">{{ $fmt($p->advance) }}</td>
                 <td class="money fw-bold text-success">{{ $fmt($p->net_salary) }}</td>
                 <td>
-                    <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}"
-                       class="btn btn-sm btn-outline-info" title="Xem phiếu lương">
-                        <i class="bi bi-eye"></i>
-                    </a>
+                    <div class="gz-actions">
+                        <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}"
+                           class="btn btn-sm btn-outline-info" title="{{ __('Xem phiếu lương') }}">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}?print=1"
+                           target="_blank"
+                           class="btn btn-sm btn-outline-primary" title="{{ __('Xuất PDF') }}">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                    </div>
                 </td>
             </tr>
             @endforeach
             @if ($payrolls->isEmpty())
             <tr><td colspan="11" class="text-center" style="color:var(--gz-muted); padding:2rem;">
-                <em>Chưa có nhân viên để tính lương</em>
+                <em>{{ __('Chưa có nhân viên để tính lương') }}</em>
             </td></tr>
             @endif
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="5" class="text-end">TỔNG CỘNG</td>
+                <td colspan="5" class="text-end">{{ __('TỔNG CỘNG') }}</td>
                 <td class="money">{{ $fmt($payrolls->sum('total_income')) }}</td>
                 <td class="money">{{ $fmt($payrolls->sum('bhxh_amount')) }}</td>
                 <td class="money text-danger">{{ $fmt($payrolls->sum('pit_amount')) }}</td>

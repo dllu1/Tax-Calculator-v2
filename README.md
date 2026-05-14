@@ -9,7 +9,9 @@ typography serif và bố cục dòng tiền minh bạch.
 ## Tính năng
 
 - Quản lý nhân viên (mã NV, lương căn bản, mức BHXH, số người phụ thuộc...)
-- Chấm công theo ngày (thường / chủ nhật ×2 / nghỉ phép / nghỉ không phép)
+- Chấm công theo ngày — 5 trạng thái: **đi làm thường / nửa ngày / chủ nhật (×2) /
+  có phép / không phép**. Trạng thái **nửa ngày** trả thêm **½ tiền chuyên cần**
+  cho mỗi half-day (không phá tiền chuyên cần cuối tháng).
 - Tăng ca (3h = ½ ngày lương)
 - Lương sản phẩm, phụ cấp (chịu thuế / không chịu thuế), tạm ứng
 - Tự động tính BHXH 10,5%, thuế TNCN theo 5 bậc lũy tiến
@@ -23,13 +25,39 @@ typography serif và bố cục dòng tiền minh bạch.
   trên cùng khi cuộn, các nút thao tác (xem / sửa / xoá) gọn trên 1 hàng.
 - **Xuất PDF** phiếu lương cá nhân &amp; bảng lương cả công ty qua nút *"Xuất PDF"* —
   dùng CSS `@media print` + dialog *Save as PDF* của trình duyệt, không cần cài thêm
-  thư viện. Output giữ nguyên typography và bố cục gazette.
+  thư viện. Output giữ nguyên typography và bố cục gazette. Bảng lương tháng có
+  thêm **nút PDF từng dòng** để xuất phiếu lương cho riêng 1 nhân viên (mở
+  `?print=1` → dialog in tự bật). Bảng chấm công cả tháng cũng có nút xuất PDF
+  với layout **A4 landscape** để chứa hết các ô ngày.
 - **Import nhân viên hàng loạt từ Excel** (`.xlsx` / `.xls` / `.csv`) qua nút
   *"Import Excel"* trên Sổ Nhân Viên. Có nút *"Tải file mẫu"* sinh file XLSX
   trống đúng định dạng. Khi phát hiện mã NV trùng, hệ thống hiện **popup so sánh
   từng trường (cũ ↔ mới)** và để người dùng chọn *Giữ nguyên dữ liệu cũ* hoặc
   *Ghi đè bằng dữ liệu mới*. Header chấp nhận cả tiếng Việt có dấu lẫn snake_case
   (`ma_nv`, `Mã NV`, `employee_code` đều được hiểu).
+- **Trang Hướng Dẫn (`/help`)** — sổ tay sử dụng đặt ngay trong web, không cần
+  mở tài liệu ngoài. Bố cục 2 cột: **phụ lục bên trái** (sticky, tự sáng-tô mục
+  đang xem theo cuộn) + nội dung từng chức năng bên phải. Bấm tiêu đề trong
+  phụ lục sẽ cuộn mượt đến phần tương ứng. **Ô tìm kiếm realtime** lọc các
+  mục theo từ khoá (không phân biệt dấu) ngay khi gõ — không khớp mục nào sẽ
+  hiện thông báo trống.
+- **Đa ngôn ngữ Việt / English** — nút **VI / EN** ở góc phải masthead. Toàn bộ
+  giao diện (masthead, nav, tất cả các trang Trang Nhất / Nhân Viên / Chấm Công /
+  Bảng Lương / Phiếu Lương / Cấu Hình / Hướng Dẫn, kể cả label tham số cấu hình
+  trong DB) được dịch qua hệ `__()` của Laravel với `lang/vi.json` &amp; `lang/en.json`.
+  Ngôn ngữ lưu trong **session**, giữ nguyên giữa các trang.
+- **Giao diện sáng / tối** — nút **🌙 / ☀** ngay cạnh chuyển ngôn ngữ. Light mode
+  giữ bảng màu cream/burgundy gốc; dark mode chuyển sang nền than-mực với chữ
+  cream-soft, giữ nguyên typography serif. Lựa chọn lưu trong `localStorage`,
+  có **pre-flight script** trong `<head>` để áp theme trước khi render — không
+  bị "flash" trắng khi tải trang.
+- **Nhập / sửa / xoá không reload trang** — các form CRUD ở **Cấu Hình**, **Sổ
+  Nhân Viên**, **Chấm Công**, và **Phiếu Lương** (Lương SP / Phụ cấp / Tạm ứng)
+  được intercept bằng `fetch` rồi gửi `XMLHttpRequest` lên server. Server trả
+  JSON `{ok, message}`, client hiện **toast nhỏ ở góc phải** thay vì điều
+  hướng. Trang phiếu lương dùng kỹ thuật **soft-reload** (fetch lại HTML, thay
+  `<main>`) để cập nhật totals mà không nháy trang. Xoá nhân viên xoá dòng
+  table tại chỗ. Nhờ vậy thao tác trên trang dữ liệu tháng mượt như SPA.
 
 ## Yêu cầu hệ thống
 
@@ -124,12 +152,15 @@ vỏ bọc đóng gói `.bat` nên không cần cài đặt thêm.
 ```
 Lương ngày     = (Lương căn bản / 26) × (Ngày thường + Ngày CN × 2)
 Lương tăng ca  = (Lương căn bản / 26 / 2) × Số ca tăng ca 3h
-Ăn giữa ca     = 30.000 × Số ngày làm
+Ăn giữa ca     = 30.000 × (Ngày thường + Ngày CN + Nửa ngày)
 Ăn tăng ca     = 30.000 × Số ca tăng ca
-Chuyên cần     = Nếu đủ công (không nghỉ X) → cộng tiền chuyên cần
+Chuyên cần     = Nếu đủ công (không có nghỉ X) → cộng tiền chuyên cần
+                 (nửa ngày KHÔNG phá chuyên cần)
+Lương nửa ngày = Số nửa ngày × (Tiền chuyên cần / 2)
 
 TỔNG THỰC NHẬN = Lương ngày + Tăng ca + Ăn ca + Ăn TC
-               + Lương SP + Chuyên cần + Phụ cấp (cả 2 loại)
+               + Lương SP + Chuyên cần + Lương nửa ngày
+               + Phụ cấp (cả 2 loại)
 ```
 
 ### Thuế TNCN
@@ -190,7 +221,10 @@ Có nút **Khôi phục mặc định** để đưa toàn bộ tham số về gi
 ```
 tax-calculator/
 ├── app/
-│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
+│   ├── Http/
+│   │   ├── Controllers/     HomeController, EmployeeController, AttendanceController, PayrollController,
+│   │   │                    SettingController, HelpController, LocaleController
+│   │   └── Middleware/      SetLocale (đọc ngôn ngữ từ session, áp App::setLocale)
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
 │   ├── Services/            TaxService, PayrollService, SettingService
 │   ├── Imports/             EmployeesImport (parse-only, bucket new/duplicate)
@@ -198,9 +232,13 @@ tax-calculator/
 ├── database/
 │   ├── migrations/          8 file migration
 │   └── seeders/             DatabaseSeeder (5 NV mẫu)
+├── lang/
+│   ├── vi.json              Bản gốc tiếng Việt
+│   └── en.json              Bản dịch tiếng Anh (~190 key)
 ├── resources/views/
-│   ├── layouts/app.blade.php
+│   ├── layouts/app.blade.php   (gồm masthead + nút VI/EN + nút theme + pre-flight script)
 │   ├── home.blade.php
+│   ├── help.blade.php       (trang hướng dẫn 2 cột: TOC sticky + nội dung)
 │   ├── employees/           (gồm modal import + modal so sánh khi trùng mã)
 │   ├── attendance/
 │   ├── payroll/
@@ -220,10 +258,13 @@ tax-calculator/
 | `/attendance?year=YYYY&month=M` | Chấm công cả tháng |
 | `/payroll?year=YYYY&month=M` | Bảng lương toàn công ty |
 | `/payroll/{id}/{year}/{month}` | Phiếu lương chi tiết 1 NV |
+| `/payroll/{id}/{year}/{month}?print=1` | Phiếu lương + tự bật dialog in PDF |
 | `/settings` | Cấu hình công thức tính thuế &amp; lương |
+| `/help` | Trang hướng dẫn sử dụng (TOC sticky + tìm kiếm realtime) |
 | `/employees/template` | Tải file mẫu XLSX để chuẩn bị dữ liệu import |
 | `POST /employees/import` | Upload file Excel (phase 1: phân tích trùng mã) |
 | `POST /employees/import/commit` | Xác nhận giữ/ghi đè sau khi xem popup (phase 2) |
+| `POST /locale/{vi\|en}` | Đổi ngôn ngữ (lưu vào session) |
 
 ## Mã NV mẫu sau seed
 
@@ -256,7 +297,10 @@ typography, and transparent cash-flow layouts.
 ## Features
 
 - Employee management (employee code, base salary, social-insurance level, number of dependants, etc.)
-- Daily attendance tracking (normal day / Sunday ×2 / paid leave / unpaid leave)
+- Daily attendance tracking — five states: **normal / half-day / Sunday (×2) /
+  paid leave / unpaid leave**. The **half-day** state pays an extra **½ of the
+  diligence bonus** per occurrence (and does not forfeit the end-of-month
+  diligence bonus).
 - Overtime tracking (3h shift = ½ day of salary)
 - Piece-rate wages, allowances (taxable / non-taxable), salary advances
 - Automatic calculation of 10.5% social insurance and PIT under the 5-bracket progressive table
@@ -273,7 +317,10 @@ typography, and transparent cash-flow layouts.
 - **PDF export** for individual payslips and the company-wide monthly payroll via
   a *"Xuất PDF"* button — implemented with CSS `@media print` and the browser's
   *Save as PDF* dialog, no extra library required. Output preserves the gazette
-  typography and layout.
+  typography and layout. The payroll list also has a **per-row PDF icon** that
+  opens the payslip with `?print=1` and auto-triggers the print dialog. The
+  monthly attendance grid has its own PDF button using **A4 landscape** layout
+  so every day-cell fits on one page.
 - **Bulk employee import from Excel** (`.xlsx` / `.xls` / `.csv`) via the
   *"Import Excel"* button on the employee list, with a *"Download Template"*
   button that produces a properly-formatted blank XLSX. When duplicate employee
@@ -281,6 +328,32 @@ typography, and transparent cash-flow layouts.
   field) lets the user choose *Keep existing data* or *Overwrite with new data*.
   Headers accept both Vietnamese with diacritics and snake_case
   (`ma_nv`, `Mã NV`, `employee_code` are all recognized).
+- **In-app User Guide (`/help`)** — a built-in manual, no need to open external
+  docs. Two-column layout: a **sticky left sidebar TOC** (auto-highlights the
+  section currently in view via `IntersectionObserver`) plus per-feature
+  documentation on the right. Clicking a TOC entry smoothly scrolls to the
+  target. A **realtime search box** filters sections by keyword (diacritic-
+  insensitive) as you type — with an empty-state message when nothing matches.
+- **Vietnamese / English bilingual UI** — a **VI / EN** toggle at the top-right
+  of the masthead. Every page (Home, Employees, Attendance, Payroll, Payslip,
+  Settings, Help — including parameter labels stored in the DB) is translated
+  through Laravel's `__()` helper backed by `lang/vi.json` &amp; `lang/en.json`.
+  The active language is stored in **session** and persists across pages.
+- **Light / Dark theme** — a **🌙 / ☀** button next to the language toggle.
+  Light mode keeps the original cream/burgundy gazette palette; dark mode
+  switches to an ink-on-charcoal scheme while preserving the serif typography.
+  The choice is stored in `localStorage` and applied by an in-`<head>`
+  **pre-flight script** before render — so there is no flash of unstyled
+  content when reloading.
+- **No-reload CRUD** — every save / edit / delete form on **Settings**,
+  **Employee Roster**, **Attendance**, and the **Payslip** (piece-rate /
+  allowance / advance) is intercepted by `fetch` and posted as an
+  `XMLHttpRequest`. The server replies with JSON `{ok, message}` and the
+  client shows a **small toast in the top-right corner** instead of
+  navigating. The payslip page uses a **soft-reload** technique (re-fetch
+  HTML, swap `<main>`) so totals refresh without a full page flash. Deleting
+  an employee removes the row in place. Working with monthly data feels like
+  a single-page app.
 
 ## System Requirements
 
@@ -378,12 +451,15 @@ runtime installation required.
 ```
 Daily salary    = (Base salary / 26) × (Normal days + Sunday days × 2)
 Overtime pay    = (Base salary / 26 / 2) × Number of 3h overtime shifts
-Meal allowance  = 30,000 × Number of working days
+Meal allowance  = 30,000 × (Normal days + Sunday days + Half days)
 OT meal         = 30,000 × Number of overtime shifts
 Diligence bonus = If full attendance (no unpaid leave) → add diligence bonus
+                  (half-days do NOT forfeit the bonus)
+Half-day pay    = Half-day count × (Diligence bonus / 2)
 
 GROSS TAKE-HOME = Daily salary + Overtime + Meal + OT meal
-                + Piece-rate + Diligence bonus + Allowances (both types)
+                + Piece-rate + Diligence bonus + Half-day pay
+                + Allowances (both types)
 ```
 
 ### Personal Income Tax (PIT)
@@ -444,7 +520,10 @@ A **Reset to defaults** button restores every parameter to its original value.
 ```
 tax-calculator/
 ├── app/
-│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
+│   ├── Http/
+│   │   ├── Controllers/     HomeController, EmployeeController, AttendanceController, PayrollController,
+│   │   │                    SettingController, HelpController, LocaleController
+│   │   └── Middleware/      SetLocale (reads the locale from the session and calls App::setLocale)
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
 │   ├── Services/            TaxService, PayrollService, SettingService
 │   ├── Imports/             EmployeesImport (parse-only, buckets new/duplicate rows)
@@ -452,9 +531,13 @@ tax-calculator/
 ├── database/
 │   ├── migrations/          8 migration files
 │   └── seeders/             DatabaseSeeder (5 sample employees)
+├── lang/
+│   ├── vi.json              Vietnamese source strings
+│   └── en.json              English translations (~190 keys)
 ├── resources/views/
-│   ├── layouts/app.blade.php
+│   ├── layouts/app.blade.php  (masthead + VI/EN toggle + theme toggle + pre-flight script)
 │   ├── home.blade.php
+│   ├── help.blade.php       (2-column user guide: sticky TOC + content)
 │   ├── employees/           (includes the import modal + duplicate-comparison modal)
 │   ├── attendance/
 │   ├── payroll/
@@ -474,10 +557,13 @@ tax-calculator/
 | `/attendance?year=YYYY&month=M` | Monthly attendance |
 | `/payroll?year=YYYY&month=M` | Company-wide payroll table |
 | `/payroll/{id}/{year}/{month}` | Detailed payslip for one employee |
+| `/payroll/{id}/{year}/{month}?print=1` | Payslip + auto-open the print dialog |
 | `/settings` | Configure tax &amp; payroll formulas |
+| `/help` | In-app user guide (sticky TOC + realtime search) |
 | `/employees/template` | Download blank XLSX import template |
 | `POST /employees/import` | Upload Excel file (phase 1: analyze duplicates) |
 | `POST /employees/import/commit` | Confirm keep/overwrite after the popup (phase 2) |
+| `POST /locale/{vi\|en}` | Switch language (persisted in session) |
 
 ## Sample employee codes after seeding
 
@@ -506,6 +592,15 @@ php artisan migrate:fresh --seed
 - **Icons:** Bootstrap Icons 1.11
 - **Excel I/O:** [maatwebsite/excel](https://github.com/SpartnerNL/Laravel-Excel) 3.1
   (built on PhpSpreadsheet) for the bulk-import &amp; template-download features
+- **i18n:** Laravel JSON localization (`lang/vi.json` &amp; `lang/en.json`) with a
+  session-backed `SetLocale` middleware
+- **Theming:** CSS Custom Properties, `localStorage` + pre-flight `<script>` in
+  the `<head>` to avoid FOUC
+- **AJAX layer:** vanilla `fetch`-based `window.GZ` helper (`submitForm`,
+  `ajaxDelete`, `softReload`) auto-wired to any `<form data-ajax="true">` or
+  `[data-ajax-delete]` element — controllers return JSON when
+  `$request->wantsJson()` is true, redirect otherwise (graceful fallback if
+  JavaScript is disabled)
 - **Runtime:** XAMPP (Apache + MySQL) on Windows
 
 ## License
