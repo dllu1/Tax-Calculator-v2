@@ -4,46 +4,672 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Tính thuế TNCN') - {{ config('app.name') }}</title>
+    <title>@yield('title', 'Niên Giám Lương') · Niên Giám Lương</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { background: #f5f7fb; }
-        .navbar-brand { font-weight: 700; }
-        .table-sm td, .table-sm th { padding: .35rem .5rem; }
+        :root {
+            --gz-bg:        #efe5cd;
+            --gz-surface:   #faf3e1;
+            --gz-surface-2: #f3e9cf;
+            --gz-ink:       #1c1a17;
+            --gz-ink-soft:  #3a3026;
+            --gz-muted:     #8a7d68;
+            --gz-rule:      #c9bb9a;
+            --gz-rule-soft: #d9cdaf;
+            --gz-accent:    #7a1f1f;
+            --gz-accent-2:  #5a1818;
+            --gz-success:   #2f5d3a;
+            --gz-warning:   #8a5a1f;
+            --gz-danger:    #7a1f1f;
+        }
+
+        html, body {
+            background: var(--gz-bg);
+            color: var(--gz-ink);
+            font-family: 'EB Garamond', 'Cambria', Georgia, serif;
+            font-size: 17px;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'EB Garamond', Georgia, serif;
+            color: var(--gz-ink);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        h1 { font-size: 2.6rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.6rem; }
+        h4 { font-size: 1.35rem; }
+        h5 { font-size: 1.15rem; }
+
+        a { color: var(--gz-accent); text-decoration: none; }
+        a:hover { color: var(--gz-accent-2); text-decoration: underline; }
+
+        code, pre, .mono {
+            font-family: 'IBM Plex Mono', Consolas, monospace;
+            font-size: 0.92em;
+            color: var(--gz-ink-soft);
+        }
+
+        /* ===== MASTHEAD ===== */
+        .gz-masthead {
+            border-top: 3px solid var(--gz-ink);
+            border-bottom: 1px solid var(--gz-rule);
+            padding: 1.1rem 0 0.4rem;
+            margin-bottom: 0;
+            background: var(--gz-bg);
+        }
+        .gz-masthead-inner {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 1rem;
+        }
+        .gz-masthead-meta {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gz-ink-soft);
+            line-height: 1.55;
+        }
+        .gz-masthead-meta strong { font-weight: 600; }
+        .gz-masthead-meta.right { text-align: right; }
+        .gz-masthead-title {
+            font-family: 'EB Garamond', serif;
+            font-size: 2.6rem;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .gz-masthead-title em { font-style: italic; font-weight: 500; }
+        .gz-masthead-title a { color: var(--gz-ink); text-decoration: none; }
+
+        /* secondary rule under masthead */
+        .gz-masthead-rule {
+            border-top: 1px solid var(--gz-rule);
+            margin-top: 4px;
+        }
+
+        /* ===== NAV ===== */
+        .gz-nav {
+            border-bottom: 1px solid var(--gz-rule);
+            padding: 0.6rem 0;
+            margin-bottom: 1.6rem;
+            background: var(--gz-bg);
+        }
+        .gz-nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .gz-nav-links {
+            display: flex;
+            gap: 1.8rem;
+            list-style: none;
+            margin: 0; padding: 0;
+            flex-wrap: wrap;
+        }
+        .gz-nav-links a {
+            color: var(--gz-ink);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            padding-bottom: 2px;
+            border-bottom: 2px solid transparent;
+            text-decoration: none;
+        }
+        .gz-nav-links a:hover,
+        .gz-nav-links a.active {
+            border-bottom-color: var(--gz-accent);
+            color: var(--gz-accent);
+        }
+        .gz-search input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--gz-rule);
+            border-radius: 0;
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            color: var(--gz-ink);
+            padding: 0.15rem 0.4rem;
+            min-width: 180px;
+        }
+        .gz-search input:focus {
+            outline: none;
+            border-bottom-color: var(--gz-accent);
+            box-shadow: none;
+            background: transparent;
+        }
+        .gz-search button {
+            background: transparent;
+            border: none;
+            color: var(--gz-ink);
+            padding: 0.15rem 0.5rem;
+        }
+        .gz-search button:hover { color: var(--gz-accent); }
+
+        /* ===== SECTION HEADING (Roman + small caps) ===== */
+        .gz-section-rule {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.8rem 0 0.6rem;
+        }
+        .gz-section-rule::before,
+        .gz-section-rule::after {
+            content: '';
+            flex: 1;
+            border-top: 1px solid var(--gz-rule);
+        }
+        .gz-section-rule-text {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            color: var(--gz-ink-soft);
+        }
+        .gz-section-rule-text em {
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+            margin-right: 0.6rem;
+            text-transform: none;
+            color: var(--gz-ink);
+        }
+        .gz-section-title {
+            font-family: 'EB Garamond', serif;
+            font-weight: 600;
+            font-size: 1.85rem;
+            margin: 0 0 0.2rem;
+            color: var(--gz-ink);
+        }
+        .gz-section-lede {
+            font-style: italic;
+            color: var(--gz-muted);
+            margin-bottom: 1rem;
+        }
+
+        /* small caps label */
+        .gz-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--gz-muted);
+        }
+        .gz-label.ink { color: var(--gz-ink); }
+
+        /* ===== CARD / PANEL ===== */
+        .gz-card {
+            background: var(--gz-surface);
+            border: 1px solid var(--gz-rule);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.3rem;
+            box-shadow: none;
+        }
+        .gz-card-tight { padding: 0.9rem 1.1rem; }
+        .gz-card-rule {
+            border-top: 1px solid var(--gz-rule);
+            margin: 1rem -1.5rem;
+        }
+        .gz-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.6rem;
+            gap: 1rem;
+        }
+
+        /* ===== FIGURE (số liệu lớn) ===== */
+        .gz-figure {
+            font-family: 'EB Garamond', serif;
+            font-weight: 500;
+            font-size: 2.6rem;
+            line-height: 1.05;
+            letter-spacing: -0.01em;
+            color: var(--gz-ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .gz-figure-sm {
+            font-family: 'EB Garamond', serif;
+            font-weight: 500;
+            font-size: 1.6rem;
+            line-height: 1.1;
+            color: var(--gz-ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .gz-figure-unit {
+            font-style: italic;
+            font-size: 0.55em;
+            color: var(--gz-muted);
+            margin-left: 0.15rem;
+            text-decoration: underline;
+            text-decoration-color: var(--gz-rule);
+            text-underline-offset: 0.25em;
+        }
+        .gz-figure-caption {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--gz-muted);
+            margin-top: 0.2rem;
+        }
+        .gz-figure-accent { color: var(--gz-accent); }
+        .gz-figure-success { color: var(--gz-success); }
+
+        /* ===== TABLES (gazette style — minimal rules) ===== */
+        .gz-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-variant-numeric: tabular-nums;
+        }
+        .gz-table thead th {
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            font-weight: 500;
+            color: var(--gz-muted);
+            text-align: left;
+            border-bottom: 1px solid var(--gz-rule);
+            padding: 0.55rem 0.7rem;
+            font-size: 0.95rem;
+        }
+        .gz-table tbody td {
+            padding: 0.6rem 0.7rem;
+            border-bottom: 1px solid var(--gz-rule-soft);
+            vertical-align: middle;
+        }
+        .gz-table tbody tr:last-child td { border-bottom: 1px solid var(--gz-rule); }
+        .gz-table .money { text-align: right; font-variant-numeric: tabular-nums; }
+        .gz-table .num { text-align: center; }
+        .gz-table tfoot td {
+            padding: 0.7rem;
+            border-top: 1px solid var(--gz-ink);
+            border-bottom: 1px solid var(--gz-ink);
+            font-weight: 600;
+        }
+
+        /* "ledger" two-column rows: label left, figure right */
+        .gz-ledger { width: 100%; border-collapse: collapse; }
+        .gz-ledger td {
+            padding: 0.42rem 0;
+            border-bottom: 1px dotted var(--gz-rule);
+            vertical-align: baseline;
+        }
+        .gz-ledger td:first-child { color: var(--gz-ink-soft); }
+        .gz-ledger td:last-child {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+        .gz-ledger tr.section td {
+            border-bottom: 1px solid var(--gz-rule);
+            padding-top: 0.9rem;
+            padding-bottom: 0.3rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--gz-ink);
+        }
+        .gz-ledger tr.total td {
+            border-top: 1px solid var(--gz-ink);
+            border-bottom: 1px solid var(--gz-ink);
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .gz-ledger tr.minus td:last-child { color: var(--gz-accent); }
+        .gz-ledger tr.plus td:last-child { color: var(--gz-success); }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border-radius: 0;
+            padding: 0.45rem 1rem;
+            border-width: 1px;
+        }
+        .btn-primary, .btn-primary:focus {
+            background: var(--gz-ink);
+            border-color: var(--gz-ink);
+            color: var(--gz-surface);
+        }
+        .btn-primary:hover { background: var(--gz-accent); border-color: var(--gz-accent); color: #fff; }
+        .btn-outline-primary {
+            color: var(--gz-ink); border-color: var(--gz-ink); background: transparent;
+        }
+        .btn-outline-primary:hover { background: var(--gz-ink); color: var(--gz-surface); }
+        .btn-outline-secondary {
+            color: var(--gz-ink-soft); border-color: var(--gz-rule); background: transparent;
+        }
+        .btn-outline-secondary:hover { background: var(--gz-ink-soft); color: var(--gz-surface); border-color: var(--gz-ink-soft); }
+        .btn-success, .btn-outline-success {
+            color: var(--gz-success); border-color: var(--gz-success); background: transparent;
+        }
+        .btn-success { background: var(--gz-success); color: #fff; }
+        .btn-success:hover { background: #244a2d; color: #fff; }
+        .btn-outline-success:hover { background: var(--gz-success); color: #fff; }
+        .btn-warning, .btn-outline-warning {
+            color: var(--gz-warning); border-color: var(--gz-warning); background: transparent;
+        }
+        .btn-warning { background: var(--gz-warning); color: #fff; }
+        .btn-outline-warning:hover { background: var(--gz-warning); color: #fff; }
+        .btn-danger, .btn-outline-danger {
+            color: var(--gz-danger); border-color: var(--gz-danger); background: transparent;
+        }
+        .btn-danger { background: var(--gz-danger); color: #fff; }
+        .btn-outline-danger:hover { background: var(--gz-danger); color: #fff; }
+        .btn-info, .btn-outline-info {
+            color: var(--gz-ink); border-color: var(--gz-rule); background: transparent;
+        }
+        .btn-outline-info:hover { background: var(--gz-ink); color: var(--gz-surface); }
+        .btn-light { background: transparent; border-color: var(--gz-rule); color: var(--gz-ink); }
+        .btn-sm { font-size: 0.7rem; padding: 0.3rem 0.7rem; letter-spacing: 0.1em; }
+        .btn-lg { font-size: 0.85rem; padding: 0.65rem 1.4rem; }
+
+        /* ===== FORMS ===== */
+        .form-control, .form-select {
+            background: var(--gz-surface);
+            border: 1px solid var(--gz-rule);
+            border-radius: 0;
+            font-family: 'EB Garamond', serif;
+            font-size: 1rem;
+            color: var(--gz-ink);
+            padding: 0.4rem 0.7rem;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #fff;
+            border-color: var(--gz-ink);
+            box-shadow: none;
+            color: var(--gz-ink);
+        }
+        .form-control::placeholder { color: var(--gz-muted); font-style: italic; }
+        .form-control-lg { font-size: 1.2rem; padding: 0.55rem 0.9rem; }
+        .form-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gz-muted);
+            margin-bottom: 0.3rem;
+        }
+        .form-check-input:checked {
+            background-color: var(--gz-ink);
+            border-color: var(--gz-ink);
+        }
+        .form-check-input { border-color: var(--gz-rule); }
+        .input-group .form-control { border-right: 0; }
+        .input-group .btn { border-color: var(--gz-rule); }
+
+        /* ===== BADGES ===== */
+        .badge {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            border-radius: 0;
+            padding: 0.25rem 0.55rem;
+            border: 1px solid currentColor;
+            background: transparent !important;
+        }
+        .badge.bg-success, .bg-success-subtle { color: var(--gz-success) !important; }
+        .badge.bg-warning, .badge.text-dark, .bg-warning-subtle { color: var(--gz-warning) !important; }
+        .badge.bg-danger { color: var(--gz-danger) !important; }
+        .badge.bg-secondary { color: var(--gz-muted) !important; }
+        .badge.bg-primary { color: var(--gz-ink) !important; }
+        .badge.solid {
+            background: var(--gz-ink) !important;
+            color: var(--gz-surface) !important;
+            border-color: var(--gz-ink);
+        }
+
+        /* ===== ALERTS ===== */
+        .alert {
+            border-radius: 0;
+            border: none;
+            border-left: 3px solid var(--gz-ink);
+            background: var(--gz-surface-2);
+            color: var(--gz-ink);
+            font-family: 'EB Garamond', serif;
+            padding: 0.7rem 1rem;
+        }
+        .alert-success { border-left-color: var(--gz-success); }
+        .alert-danger  { border-left-color: var(--gz-danger); }
+        .alert-warning { border-left-color: var(--gz-warning); }
+        .alert-info    { border-left-color: var(--gz-ink); }
+        .alert-light   { border-left-color: var(--gz-rule); background: var(--gz-surface); }
+
+        /* ===== TABS ===== */
+        .nav-tabs {
+            border-bottom: 1px solid var(--gz-rule);
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--gz-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            border-radius: 0;
+            padding: 0.55rem 1rem;
+            background: transparent;
+        }
+        .nav-tabs .nav-link:hover { color: var(--gz-ink); }
+        .nav-tabs .nav-link.active {
+            color: var(--gz-ink);
+            background: transparent;
+            border-bottom-color: var(--gz-accent);
+        }
+        .tab-content.gz-tab-body {
+            border: 1px solid var(--gz-rule);
+            border-top: none;
+            background: var(--gz-surface);
+            padding: 1.25rem 1.5rem;
+        }
+
+        /* ===== DROPCAP (lede paragraph) ===== */
+        .gz-dropcap::first-letter {
+            font-family: 'EB Garamond', serif;
+            font-size: 4rem;
+            font-weight: 600;
+            float: left;
+            line-height: 0.88;
+            padding: 0.15rem 0.55rem 0 0;
+            color: var(--gz-ink);
+        }
+
+        /* ===== FOOTER ===== */
+        .gz-footer {
+            margin-top: 3rem;
+            border-top: 1px solid var(--gz-rule);
+            padding: 1.2rem 0 1.6rem;
+            text-align: center;
+            font-style: italic;
+            font-size: 0.85rem;
+            color: var(--gz-muted);
+        }
+
+        /* helpers */
         .money { text-align: right; font-variant-numeric: tabular-nums; }
-        .badge-type-normal  { background: #198754; }
-        .badge-type-sunday  { background: #fd7e14; }
-        .badge-type-absent  { background: #dc3545; }
-        .badge-type-leave   { background: #6c757d; }
+        .num   { text-align: center; font-variant-numeric: tabular-nums; }
+        .text-muted, .text-secondary { color: var(--gz-muted) !important; }
+        .text-success { color: var(--gz-success) !important; }
+        .text-danger  { color: var(--gz-danger) !important; }
+        .text-warning { color: var(--gz-warning) !important; }
+        .text-primary { color: var(--gz-accent) !important; }
+        .table-light, .bg-light { background: var(--gz-surface-2) !important; }
+        .table { color: var(--gz-ink); }
+        .shadow-sm, .shadow { box-shadow: none !important; }
+        hr { border-color: var(--gz-rule); }
+
+        /* attendance month grid colors (override badge-type-*) */
+        .att-normal { background: #d6dfc8; color: var(--gz-ink); }
+        .att-sunday { background: #e8d8b0; color: var(--gz-ink); }
+        .att-leave  { background: #d6cdc0; color: var(--gz-ink-soft); }
+        .att-absent { background: #c9a8a3; color: #4a1414; }
+        .att-cell a { color: inherit !important; text-decoration: none; }
+
+        /* attendance month — keep table simple bordered */
+        .gz-grid-table { border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; }
+        .gz-grid-table th, .gz-grid-table td {
+            border: 1px solid var(--gz-rule);
+            padding: 0.25rem;
+            text-align: center;
+            background: var(--gz-surface);
+        }
+        .gz-grid-table th { background: var(--gz-surface-2); font-weight: 500; color: var(--gz-ink); }
+        .gz-grid-table .sunday-col { background: #ece2c4; }
+
+        /* ===== PRINT / PDF ===== */
+        @media print {
+            @page {
+                size: A4;
+                margin: 12mm 14mm;
+            }
+            html, body {
+                background: #fff !important;
+                color: #000 !important;
+                font-size: 11pt;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .gz-nav,
+            .gz-footer,
+            .no-print,
+            .btn,
+            .nav-tabs,
+            form#attForm .btn-group { display: none !important; }
+            /* keep masthead but tighter */
+            .gz-masthead { padding-top: 0; margin-bottom: 0.5rem; }
+            .gz-masthead-rule { margin-top: 2px; }
+            main.container { padding: 0 !important; max-width: 100% !important; }
+            .container { max-width: 100% !important; padding-left: 0; padding-right: 0; }
+            .gz-card {
+                background: var(--gz-surface) !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin-bottom: 0.6rem;
+                padding: 0.6rem 0.9rem;
+            }
+            .gz-section-rule { margin: 0.8rem 0 0.3rem; break-after: avoid; }
+            h1, h2, h3, h4 { break-after: avoid; }
+            .gz-figure { font-size: 2.1rem; }
+            .gz-figure-sm { font-size: 1.3rem; }
+            .gz-ledger td { padding: 0.25rem 0; }
+            .gz-table thead th { padding: 0.35rem 0.5rem; }
+            .gz-table tbody td { padding: 0.35rem 0.5rem; }
+            /* tab content always visible when printing */
+            .tab-content > .tab-pane { display: block !important; opacity: 1 !important; }
+            .tab-content { border: none !important; padding: 0 !important; background: transparent !important; }
+            /* nice page break for the flow strip */
+            .gz-cashflow { break-before: avoid; }
+            a { color: inherit !important; text-decoration: none !important; }
+            .alert { display: none !important; }
+        }
+
+        /* print-only watermark/footer info */
+        .print-only { display: none; }
+        @media print { .print-only { display: block; } }
+
+        /* ===== PAYROLL SHOW — grid cells ===== */
+        .gz-card-flush { padding: 0; }
+        .gz-grid-cell {
+            padding: 1rem 1.2rem;
+            border-right: 1px solid var(--gz-rule);
+        }
+        .gz-grid-cell:last-child { border-right: none; }
+        .gz-cashflow-cell {
+            padding: 1rem;
+            border-right: 1px solid var(--gz-rule);
+        }
+        .gz-cashflow-cell:last-child { border-right: none; }
+        .gz-cashflow-cell.highlight { background: var(--gz-surface-2); }
+        .gz-cashflow-step {
+            font-style: italic;
+            color: var(--gz-muted);
+            font-size: 0.75rem;
+        }
+        .gz-cashflow-label {
+            font-size: 0.85rem;
+            color: var(--gz-ink-soft);
+            margin-bottom: 0.4rem;
+        }
+        .gz-cashflow-delta {
+            color: var(--gz-accent);
+            font-size: 0.8rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
+
+<header class="gz-masthead">
     <div class="container">
-        <a class="navbar-brand" href="{{ route('home') }}">
-            <i class="bi bi-calculator-fill"></i> Tính thuế TNCN
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nv">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="nv">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('employees.index') }}">Nhân viên</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('attendance.index') }}">Chấm công</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('payroll.index') }}">Bảng lương</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('settings.index') }}"><i class="bi bi-sliders"></i> Cấu hình</a></li>
-            </ul>
-            <form action="{{ route('home.search') }}" method="POST" class="d-flex">
-                @csrf
-                <input class="form-control me-2" name="code" placeholder="Nhập mã NV..." required>
-                <button class="btn btn-light" type="submit"><i class="bi bi-search"></i></button>
-            </form>
+        <div class="gz-masthead-inner">
+            @php
+                $now = now();
+                $dow = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'][$now->dayOfWeek];
+                $months = ['','Một','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười Một','Mười Hai'];
+            @endphp
+            <div class="gz-masthead-meta">
+                Số <strong>01</strong> · Tập I<br>
+                {{ $dow }}, {{ $now->day }} Tháng {{ $months[$now->month] }}, {{ $now->year }}
+            </div>
+            <h1 class="gz-masthead-title">
+                <a href="{{ route('home') }}">Niên Giám <em>Lương</em></a>
+            </h1>
+            <div class="gz-masthead-meta right">
+                Máy tính TNCN<br>
+                & Quản lý lương
+            </div>
         </div>
+        <div class="gz-masthead-rule"></div>
+    </div>
+</header>
+
+<nav class="gz-nav">
+    <div class="container gz-nav-inner">
+        <ul class="gz-nav-links">
+            @php $rn = request()->route() ? request()->route()->getName() : ''; @endphp
+            <li><a href="{{ route('home') }}" class="{{ $rn === 'home' ? 'active' : '' }}">Trang Nhất</a></li>
+            <li><a href="{{ route('employees.index') }}" class="{{ str_starts_with($rn, 'employees.') ? 'active' : '' }}">Nhân Viên</a></li>
+            <li><a href="{{ route('attendance.index') }}" class="{{ str_starts_with($rn, 'attendance.') ? 'active' : '' }}">Chấm Công</a></li>
+            <li><a href="{{ route('payroll.index') }}" class="{{ str_starts_with($rn, 'payroll.') ? 'active' : '' }}">Bảng Lương</a></li>
+            <li><a href="{{ route('settings.index') }}" class="{{ str_starts_with($rn, 'settings.') ? 'active' : '' }}">Cấu Hình</a></li>
+        </ul>
+        <form action="{{ route('home.search') }}" method="POST" class="gz-search d-flex align-items-center">
+            @csrf
+            <input name="code" placeholder="Tra cứu mã NV..." required>
+            <button type="submit"><i class="bi bi-search"></i></button>
+        </form>
     </div>
 </nav>
 
-<div class="container">
+<main class="container pb-4">
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show">
             {{ session('success') }}
@@ -65,10 +691,11 @@
     @endif
 
     @yield('content')
-</div>
+</main>
 
-<footer class="text-center text-muted mt-5 mb-3">
-    <small>© {{ date('Y') }} - Tính thuế TNCN - Laravel {{ app()->version() }}</small>
+<footer class="gz-footer container">
+    Niên Giám Lương · Máy tính TNCN &amp; Quản lý lương · In ngày {{ now()->format('d/m/Y') }} ·
+    Laravel {{ app()->version() }}
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

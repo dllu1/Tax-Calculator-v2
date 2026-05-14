@@ -1,8 +1,10 @@
-# Hệ thống Tính thuế TNCN & Quản lý lương
+# Niên Giám Lương — Tính thuế TNCN & Quản lý lương
 
 > 🇻🇳 Tiếng Việt (bên dưới) · 🇬🇧 [English version](#english-version)
 
-Ứng dụng web Laravel 11 tính thuế thu nhập cá nhân và quản lý lương theo quy định Việt Nam.
+Ứng dụng web Laravel 11 tính thuế thu nhập cá nhân và quản lý lương theo quy định
+Việt Nam, trình bày dưới giao diện *niên giám / báo cổ điển* với màu mực ấm,
+typography serif và bố cục dòng tiền minh bạch.
 
 ## Tính năng
 
@@ -15,6 +17,12 @@
 - **Cấu hình động công thức tính thuế &amp; lương** qua trang `/settings`:
   giảm trừ gia cảnh, tỉ lệ BHXH, các bậc thuế lũy tiến, số công chuẩn,
   tiền ăn, hệ số Chủ nhật &amp; tăng ca... — không cần sửa code khi luật thay đổi.
+- **Giao diện "Niên Giám"** lấy cảm hứng từ báo in cổ điển: bảng màu cream/burgundy,
+  serif EB Garamond, mục lục số La Mã, "dòng tiền tháng" 5 cột trên phiếu lương,
+  bảng ledger với dotted rule và double-rule total.
+- **Xuất PDF** phiếu lương cá nhân &amp; bảng lương cả công ty qua nút *"Xuất PDF"* —
+  dùng CSS `@media print` + dialog *Save as PDF* của trình duyệt, không cần cài thêm
+  thư viện. Output giữ nguyên typography và bố cục gazette.
 
 ## Yêu cầu hệ thống
 
@@ -204,9 +212,12 @@ php artisan migrate:fresh --seed
 
 ## English version
 
-# Vietnam Personal Income Tax (PIT) & Payroll Management System
+# Niên Giám Lương — Vietnam PIT & Payroll Management System
 
-A Laravel 11 web application that calculates Vietnamese personal income tax (PIT) and manages monthly payroll according to current Vietnam regulations.
+A Laravel 11 web application that calculates Vietnamese personal income tax (PIT)
+and manages monthly payroll according to current Vietnam regulations, presented
+through a *classical gazette / almanac* interface with warm ink colors, serif
+typography, and transparent cash-flow layouts.
 
 ## Features
 
@@ -220,6 +231,14 @@ A Laravel 11 web application that calculates Vietnamese personal income tax (PIT
   personal/dependant deductions, social-insurance rate, progressive PIT brackets,
   standard working days, meal allowances, Sunday &amp; overtime multipliers — no code
   change required when regulations or company policy change.
+- **"Gazette" interface** inspired by classical print newspapers: cream/burgundy
+  palette, EB Garamond serif, Roman-numeral section rules, a 5-column monthly
+  cash-flow strip on each payslip, and ledger tables with dotted rules and
+  double-rule totals.
+- **PDF export** for individual payslips and the company-wide monthly payroll via
+  a *"Xuất PDF"* button — implemented with CSS `@media print` and the browser's
+  *Save as PDF* dialog, no extra library required. Output preserves the gazette
+  typography and layout.
 
 ## System Requirements
 
@@ -409,7 +428,10 @@ php artisan migrate:fresh --seed
 
 - **Backend:** Laravel 11, PHP 8.2+
 - **Database:** MySQL / MariaDB
-- **Frontend:** Blade templates
+- **Frontend:** Blade templates, Bootstrap 5.3 (heavily themed)
+- **Typography:** EB Garamond (serif body/figures), Inter (small-caps labels/buttons),
+  IBM Plex Mono (keys, codes) — loaded from Google Fonts
+- **Icons:** Bootstrap Icons 1.11
 - **Runtime:** XAMPP (Apache + MySQL) on Windows
 
 ## License

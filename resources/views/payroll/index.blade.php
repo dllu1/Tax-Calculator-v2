@@ -1,75 +1,124 @@
 @extends('layouts.app')
 @section('title', 'Bảng lương '.$month.'/'.$year)
 
-@section('content')
-<div class="card shadow-sm">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0"><i class="bi bi-cash-stack"></i> Bảng lương {{ $month }}/{{ $year }}</h4>
-            <form method="GET" class="d-flex gap-2">
-                <select name="month" class="form-select form-select-sm">
-                    @for ($m=1; $m<=12; $m++)
-                        <option value="{{ $m }}" @selected($m == $month)>Tháng {{ $m }}</option>
-                    @endfor
-                </select>
-                <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
-                <button class="btn btn-sm btn-primary">Tính lại</button>
-            </form>
-        </div>
+@php $fmt = fn($n) => number_format($n, 0, ',', '.'); @endphp
 
-        <div class="table-responsive">
-        <table class="table table-bordered table-sm align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Mã NV</th>
-                    <th>Họ tên</th>
-                    <th>Công thường</th>
-                    <th>CN</th>
-                    <th>TC</th>
-                    <th class="money">Tổng thực nhận</th>
-                    <th class="money">BHXH</th>
-                    <th class="money">Thuế TNCN</th>
-                    <th class="money">Tạm ứng</th>
-                    <th class="money">Còn lại</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($payrolls as $p)
-                <tr>
-                    <td><strong>{{ $p->employee->employee_code }}</strong></td>
-                    <td>{{ $p->employee->full_name }}</td>
-                    <td class="text-center">{{ $p->normal_days }}</td>
-                    <td class="text-center">{{ $p->sunday_days }}</td>
-                    <td class="text-center">{{ $p->overtime_shifts }}</td>
-                    <td class="money">{{ number_format($p->total_income, 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($p->bhxh_amount, 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($p->pit_amount, 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($p->advance, 0, ',', '.') }}</td>
-                    <td class="money fw-bold text-success">{{ number_format($p->net_salary, 0, ',', '.') }}</td>
-                    <td>
-                        <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}"
-                           class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
-                    </td>
-                </tr>
-                @endforeach
-                @if ($payrolls->isEmpty())
-                <tr><td colspan="11" class="text-center text-muted">Chưa có nhân viên để tính lương</td></tr>
-                @endif
-            </tbody>
-            <tfoot class="table-light">
-                <tr class="fw-bold">
-                    <td colspan="5" class="text-end">TỔNG:</td>
-                    <td class="money">{{ number_format($payrolls->sum('total_income'), 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($payrolls->sum('bhxh_amount'), 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($payrolls->sum('pit_amount'), 0, ',', '.') }}</td>
-                    <td class="money">{{ number_format($payrolls->sum('advance'), 0, ',', '.') }}</td>
-                    <td class="money text-success">{{ number_format($payrolls->sum('net_salary'), 0, ',', '.') }}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+@section('content')
+
+<div class="gz-section-rule">
+    <span class="gz-section-rule-text"><em>I</em> Bản Tổng Kê Tháng {{ $month }}/{{ $year }}</span>
+</div>
+
+<div class="gz-card-head" style="margin-bottom: 1rem;">
+    <div>
+        <h2 class="gz-section-title mb-1">Bảng lương toàn công ty</h2>
+        <p class="gz-section-lede mb-0">
+            Số liệu được tính lại tự động mỗi lần truy cập theo công thức hiện hành trong mục
+            <a href="{{ route('settings.index') }}">Cấu Hình</a>.
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-items-end no-print">
+        <form method="GET" class="d-flex gap-2 align-items-end">
+            <select name="month" class="form-select form-select-sm">
+                @for ($m=1; $m<=12; $m++)
+                    <option value="{{ $m }}" @selected($m == $month)>Tháng {{ $m }}</option>
+                @endfor
+            </select>
+            <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
+            <button class="btn btn-sm btn-outline-primary">Tính Lại</button>
+        </form>
+        <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+            <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+        </button>
+    </div>
+</div>
+
+{{-- Tổng quan: 3 figure ngang --}}
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="gz-card gz-card-tight">
+            <div class="gz-label">Tổng thực nhận</div>
+            <div class="gz-figure-sm">{{ $fmt($payrolls->sum('total_income')) }}
+                <span class="gz-figure-unit">₫</span></div>
+            <div class="gz-figure-caption">{{ $payrolls->count() }} nhân viên · trước trừ</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="gz-card gz-card-tight">
+            <div class="gz-label">Tổng thuế TNCN</div>
+            <div class="gz-figure-sm gz-figure-accent">{{ $fmt($payrolls->sum('pit_amount')) }}
+                <span class="gz-figure-unit">₫</span></div>
+            <div class="gz-figure-caption">Lũy tiến năm bậc</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="gz-card gz-card-tight">
+            <div class="gz-label">Tổng lương còn lại</div>
+            <div class="gz-figure-sm gz-figure-success">{{ $fmt($payrolls->sum('net_salary')) }}
+                <span class="gz-figure-unit">₫</span></div>
+            <div class="gz-figure-caption">Sau khấu trừ &amp; tạm ứng</div>
         </div>
     </div>
 </div>
+
+<div class="gz-card">
+    <div class="table-responsive">
+    <table class="gz-table">
+        <thead>
+            <tr>
+                <th style="width:80px">Mã NV</th>
+                <th>Họ tên</th>
+                <th class="num" style="width:60px">Thường</th>
+                <th class="num" style="width:50px">CN</th>
+                <th class="num" style="width:50px">TC</th>
+                <th class="money">Tổng thực nhận</th>
+                <th class="money">BHXH</th>
+                <th class="money">Thuế TNCN</th>
+                <th class="money">Tạm ứng</th>
+                <th class="money">Còn lại</th>
+                <th style="width:42px"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($payrolls as $p)
+            <tr>
+                <td><strong>{{ $p->employee->employee_code }}</strong></td>
+                <td>{{ $p->employee->full_name }}</td>
+                <td class="num">{{ $p->normal_days }}</td>
+                <td class="num">{{ $p->sunday_days }}</td>
+                <td class="num">{{ $p->overtime_shifts }}</td>
+                <td class="money">{{ $fmt($p->total_income) }}</td>
+                <td class="money">{{ $fmt($p->bhxh_amount) }}</td>
+                <td class="money text-danger">{{ $fmt($p->pit_amount) }}</td>
+                <td class="money">{{ $fmt($p->advance) }}</td>
+                <td class="money fw-bold text-success">{{ $fmt($p->net_salary) }}</td>
+                <td>
+                    <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}"
+                       class="btn btn-sm btn-outline-info" title="Xem phiếu lương">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            @endforeach
+            @if ($payrolls->isEmpty())
+            <tr><td colspan="11" class="text-center" style="color:var(--gz-muted); padding:2rem;">
+                <em>Chưa có nhân viên để tính lương</em>
+            </td></tr>
+            @endif
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" class="text-end">TỔNG CỘNG</td>
+                <td class="money">{{ $fmt($payrolls->sum('total_income')) }}</td>
+                <td class="money">{{ $fmt($payrolls->sum('bhxh_amount')) }}</td>
+                <td class="money text-danger">{{ $fmt($payrolls->sum('pit_amount')) }}</td>
+                <td class="money">{{ $fmt($payrolls->sum('advance')) }}</td>
+                <td class="money text-success">{{ $fmt($payrolls->sum('net_salary')) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+    </div>
+</div>
+
 @endsection
