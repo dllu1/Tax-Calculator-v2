@@ -19,10 +19,17 @@ typography serif và bố cục dòng tiền minh bạch.
   tiền ăn, hệ số Chủ nhật &amp; tăng ca... — không cần sửa code khi luật thay đổi.
 - **Giao diện "Niên Giám"** lấy cảm hứng từ báo in cổ điển: bảng màu cream/burgundy,
   serif EB Garamond, mục lục số La Mã, "dòng tiền tháng" 5 cột trên phiếu lương,
-  bảng ledger với dotted rule và double-rule total.
+  bảng ledger với dotted rule và double-rule total. Thanh điều hướng **sticky** ở
+  trên cùng khi cuộn, các nút thao tác (xem / sửa / xoá) gọn trên 1 hàng.
 - **Xuất PDF** phiếu lương cá nhân &amp; bảng lương cả công ty qua nút *"Xuất PDF"* —
   dùng CSS `@media print` + dialog *Save as PDF* của trình duyệt, không cần cài thêm
   thư viện. Output giữ nguyên typography và bố cục gazette.
+- **Import nhân viên hàng loạt từ Excel** (`.xlsx` / `.xls` / `.csv`) qua nút
+  *"Import Excel"* trên Sổ Nhân Viên. Có nút *"Tải file mẫu"* sinh file XLSX
+  trống đúng định dạng. Khi phát hiện mã NV trùng, hệ thống hiện **popup so sánh
+  từng trường (cũ ↔ mới)** và để người dùng chọn *Giữ nguyên dữ liệu cũ* hoặc
+  *Ghi đè bằng dữ liệu mới*. Header chấp nhận cả tiếng Việt có dấu lẫn snake_case
+  (`ma_nv`, `Mã NV`, `employee_code` đều được hiểu).
 
 ## Yêu cầu hệ thống
 
@@ -90,6 +97,26 @@ php artisan serve
 ```
 
 Mở trình duyệt: **http://localhost:8000**
+
+#### Khởi động bằng 1 click (Windows)
+
+Trong thư mục dự án đã có sẵn 2 file:
+
+- **`start.bat`** — double-click sẽ tự động:
+  1. Khởi động MySQL của XAMPP (nếu chưa chạy)
+  2. Chạy `php artisan migrate --force` để áp dụng migration mới (nếu có)
+  3. Khởi động Laravel server tại `http://localhost:8000`
+  4. Mở trình duyệt mặc định vào trang chủ
+- **`stop.bat`** — dừng Laravel server (không tắt MySQL để tránh ảnh hưởng các app khác dùng chung XAMPP)
+
+Mặc định script tìm XAMPP tại `C:\xampp`. Nếu bạn cài XAMPP ở chỗ khác, sửa biến `XAMPP_DIR` ở đầu `start.bat`.
+
+#### Tạo file `.exe` từ `start.bat` (tuỳ chọn)
+
+Nếu muốn 1 file `.exe` để đặt shortcut ra desktop, dùng tool miễn phí
+[**Bat To Exe Converter**](https://www.battoexeconverter.com/) — mở `start.bat`,
+chọn icon (nếu thích), bấm *Convert* sẽ ra `start.exe`. File `.exe` đó chỉ là
+vỏ bọc đóng gói `.bat` nên không cần cài đặt thêm.
 
 ## Công thức tính lương & thuế
 
@@ -165,18 +192,22 @@ tax-calculator/
 ├── app/
 │   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
-│   └── Services/            TaxService, PayrollService, SettingService
+│   ├── Services/            TaxService, PayrollService, SettingService
+│   ├── Imports/             EmployeesImport (parse-only, bucket new/duplicate)
+│   └── Exports/             EmployeesTemplateExport (sinh file mẫu XLSX)
 ├── database/
 │   ├── migrations/          8 file migration
 │   └── seeders/             DatabaseSeeder (5 NV mẫu)
 ├── resources/views/
 │   ├── layouts/app.blade.php
 │   ├── home.blade.php
-│   ├── employees/
+│   ├── employees/           (gồm modal import + modal so sánh khi trùng mã)
 │   ├── attendance/
 │   ├── payroll/
 │   └── settings/
 ├── routes/web.php
+├── start.bat                Khởi động 1-click (Windows)
+├── stop.bat                 Dừng Laravel server
 └── .env
 ```
 
@@ -190,6 +221,9 @@ tax-calculator/
 | `/payroll?year=YYYY&month=M` | Bảng lương toàn công ty |
 | `/payroll/{id}/{year}/{month}` | Phiếu lương chi tiết 1 NV |
 | `/settings` | Cấu hình công thức tính thuế &amp; lương |
+| `/employees/template` | Tải file mẫu XLSX để chuẩn bị dữ liệu import |
+| `POST /employees/import` | Upload file Excel (phase 1: phân tích trùng mã) |
+| `POST /employees/import/commit` | Xác nhận giữ/ghi đè sau khi xem popup (phase 2) |
 
 ## Mã NV mẫu sau seed
 
@@ -234,11 +268,19 @@ typography, and transparent cash-flow layouts.
 - **"Gazette" interface** inspired by classical print newspapers: cream/burgundy
   palette, EB Garamond serif, Roman-numeral section rules, a 5-column monthly
   cash-flow strip on each payslip, and ledger tables with dotted rules and
-  double-rule totals.
+  double-rule totals. The top navigation bar **sticks** on scroll, and row
+  actions (view / edit / delete) are laid out as a compact single-row group.
 - **PDF export** for individual payslips and the company-wide monthly payroll via
   a *"Xuất PDF"* button — implemented with CSS `@media print` and the browser's
   *Save as PDF* dialog, no extra library required. Output preserves the gazette
   typography and layout.
+- **Bulk employee import from Excel** (`.xlsx` / `.xls` / `.csv`) via the
+  *"Import Excel"* button on the employee list, with a *"Download Template"*
+  button that produces a properly-formatted blank XLSX. When duplicate employee
+  codes are detected, a **side-by-side comparison popup** (old vs. new, per
+  field) lets the user choose *Keep existing data* or *Overwrite with new data*.
+  Headers accept both Vietnamese with diacritics and snake_case
+  (`ma_nv`, `Mã NV`, `employee_code` are all recognized).
 
 ## System Requirements
 
@@ -306,6 +348,29 @@ php artisan serve
 ```
 
 Open your browser at: **http://localhost:8000**
+
+#### One-click launcher (Windows)
+
+The project ships with two batch files at the project root:
+
+- **`start.bat`** — double-click to:
+  1. Start XAMPP's MySQL (if not already running)
+  2. Run `php artisan migrate --force` to apply any pending migrations
+  3. Start the Laravel server on `http://localhost:8000`
+  4. Open the default browser at the home page
+- **`stop.bat`** — stops the Laravel server only (leaves MySQL running so other
+  XAMPP-based apps are not affected)
+
+The script defaults to `C:\xampp`. If XAMPP lives elsewhere, edit the
+`XAMPP_DIR` variable at the top of `start.bat`.
+
+#### Wrapping `start.bat` into a `.exe` (optional)
+
+If you want a single `.exe` you can pin to the desktop, use the free
+[**Bat To Exe Converter**](https://www.battoexeconverter.com/): open
+`start.bat`, optionally pick an icon, then click *Convert* to produce
+`start.exe`. The `.exe` is just a thin wrapper around the `.bat` — no
+runtime installation required.
 
 ## Salary & Tax Formulas
 
@@ -381,18 +446,22 @@ tax-calculator/
 ├── app/
 │   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
-│   └── Services/            TaxService, PayrollService, SettingService
+│   ├── Services/            TaxService, PayrollService, SettingService
+│   ├── Imports/             EmployeesImport (parse-only, buckets new/duplicate rows)
+│   └── Exports/             EmployeesTemplateExport (generates the blank XLSX template)
 ├── database/
 │   ├── migrations/          8 migration files
 │   └── seeders/             DatabaseSeeder (5 sample employees)
 ├── resources/views/
 │   ├── layouts/app.blade.php
 │   ├── home.blade.php
-│   ├── employees/
+│   ├── employees/           (includes the import modal + duplicate-comparison modal)
 │   ├── attendance/
 │   ├── payroll/
 │   └── settings/
 ├── routes/web.php
+├── start.bat                One-click launcher (Windows)
+├── stop.bat                 Stops the Laravel server
 └── .env
 ```
 
@@ -406,6 +475,9 @@ tax-calculator/
 | `/payroll?year=YYYY&month=M` | Company-wide payroll table |
 | `/payroll/{id}/{year}/{month}` | Detailed payslip for one employee |
 | `/settings` | Configure tax &amp; payroll formulas |
+| `/employees/template` | Download blank XLSX import template |
+| `POST /employees/import` | Upload Excel file (phase 1: analyze duplicates) |
+| `POST /employees/import/commit` | Confirm keep/overwrite after the popup (phase 2) |
 
 ## Sample employee codes after seeding
 
@@ -432,6 +504,8 @@ php artisan migrate:fresh --seed
 - **Typography:** EB Garamond (serif body/figures), Inter (small-caps labels/buttons),
   IBM Plex Mono (keys, codes) — loaded from Google Fonts
 - **Icons:** Bootstrap Icons 1.11
+- **Excel I/O:** [maatwebsite/excel](https://github.com/SpartnerNL/Laravel-Excel) 3.1
+  (built on PhpSpreadsheet) for the bulk-import &amp; template-download features
 - **Runtime:** XAMPP (Apache + MySQL) on Windows
 
 ## License

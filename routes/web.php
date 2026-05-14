@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/search', [HomeController::class, 'search'])->name('home.search');
 
+Route::get('/employees/template', [EmployeeController::class, 'template'])->name('employees.template');
+Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import');
+Route::post('/employees/import/commit', [EmployeeController::class, 'importCommit'])->name('employees.import.commit');
 Route::resource('employees', EmployeeController::class)->except(['show']);
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
