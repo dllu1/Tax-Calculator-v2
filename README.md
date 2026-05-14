@@ -12,6 +12,9 @@
 - Lương sản phẩm, phụ cấp (chịu thuế / không chịu thuế), tạm ứng
 - Tự động tính BHXH 10,5%, thuế TNCN theo 5 bậc lũy tiến
 - Phiếu lương chi tiết theo từng nhân viên / từng tháng
+- **Cấu hình động công thức tính thuế &amp; lương** qua trang `/settings`:
+  giảm trừ gia cảnh, tỉ lệ BHXH, các bậc thuế lũy tiến, số công chuẩn,
+  tiền ăn, hệ số Chủ nhật &amp; tăng ca... — không cần sửa code khi luật thay đổi.
 
 ## Yêu cầu hệ thống
 
@@ -68,8 +71,9 @@ php artisan migrate --seed
 ```
 
 Lệnh này sẽ:
-- Tạo 7 bảng: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`
+- Tạo 8 bảng: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
 - Tạo 5 nhân viên mẫu (NV001 - NV005) kèm dữ liệu chấm công 20 ngày
+- Tự động seed các tham số mặc định cho bảng `settings` (lần đầu vào `/settings`)
 
 ### Bước 6: Chạy server
 
@@ -114,23 +118,56 @@ TN chịu thuế   = TN tính thuế − 11.000.000 − (4.400.000 × NPT) − B
 CÒN LẠI = Tổng thực nhận − Tạm ứng − BHXH 10,5% − Thuế TNCN
 ```
 
+## Cấu hình công thức (`/settings`)
+
+Toàn bộ con số trong các công thức trên đều có thể chỉnh sửa **trực tiếp trên web**,
+không cần đụng đến code. Khi luật thuế hoặc chính sách công ty thay đổi, vào menu
+**Cấu hình** để cập nhật — bảng lương sẽ tự tính lại theo công thức mới ngay lần xem tiếp theo.
+
+Trang `/settings` có 3 tab:
+
+**1. Công thức thuế TNCN**
+
+| Tham số | Mặc định | Ý nghĩa |
+|---|---|---|
+| `tax.personal_deduction` | 11.000.000 | Giảm trừ bản thân / tháng |
+| `tax.dependent_deduction` | 4.400.000 | Giảm trừ / người phụ thuộc / tháng |
+| `tax.bhxh_rate` | 0.105 | Tỉ lệ BHXH/BHYT/BHTN nhân viên đóng |
+
+**2. Biểu thuế lũy tiến** — thêm / xoá / sửa từng bậc thuế (Giới hạn / Thuế suất / Khấu trừ).
+Đặt **Giới hạn = 0** cho bậc cao nhất (không giới hạn). Hệ thống tự sắp xếp lại
+theo `limit` tăng dần khi lưu.
+
+**3. Công thức tính lương**
+
+| Tham số | Mặc định | Ý nghĩa |
+|---|---|---|
+| `payroll.standard_days` | 26 | Số công chuẩn / tháng |
+| `payroll.meal_per_day` | 30.000 | Tiền ăn / ngày công |
+| `payroll.meal_per_ot_shift` | 30.000 | Tiền ăn / ca tăng ca |
+| `payroll.sunday_multiplier` | 2 | Hệ số công Chủ nhật |
+| `payroll.overtime_multiplier` | 0.5 | Hệ số 1 ca tăng ca (theo ngày công) |
+
+Có nút **Khôi phục mặc định** để đưa toàn bộ tham số về giá trị gốc.
+
 ## Cấu trúc thư mục
 
 ```
 tax-calculator/
 ├── app/
-│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController
-│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll
-│   └── Services/            TaxService, PayrollService
+│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
+│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
+│   └── Services/            TaxService, PayrollService, SettingService
 ├── database/
-│   ├── migrations/          7 file migration
+│   ├── migrations/          8 file migration
 │   └── seeders/             DatabaseSeeder (5 NV mẫu)
 ├── resources/views/
 │   ├── layouts/app.blade.php
 │   ├── home.blade.php
 │   ├── employees/
 │   ├── attendance/
-│   └── payroll/
+│   ├── payroll/
+│   └── settings/
 ├── routes/web.php
 └── .env
 ```
@@ -144,6 +181,7 @@ tax-calculator/
 | `/attendance?year=YYYY&month=M` | Chấm công cả tháng |
 | `/payroll?year=YYYY&month=M` | Bảng lương toàn công ty |
 | `/payroll/{id}/{year}/{month}` | Phiếu lương chi tiết 1 NV |
+| `/settings` | Cấu hình công thức tính thuế &amp; lương |
 
 ## Mã NV mẫu sau seed
 
@@ -178,6 +216,10 @@ A Laravel 11 web application that calculates Vietnamese personal income tax (PIT
 - Piece-rate wages, allowances (taxable / non-taxable), salary advances
 - Automatic calculation of 10.5% social insurance and PIT under the 5-bracket progressive table
 - Detailed payslip per employee per month
+- **Editable tax &amp; payroll formulas** via the `/settings` page:
+  personal/dependant deductions, social-insurance rate, progressive PIT brackets,
+  standard working days, meal allowances, Sunday &amp; overtime multipliers — no code
+  change required when regulations or company policy change.
 
 ## System Requirements
 
@@ -234,8 +276,9 @@ php artisan migrate --seed
 ```
 
 This command will:
-- Create 7 tables: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`
+- Create 8 tables: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
 - Create 5 sample employees (NV001 - NV005) with 20 days of attendance data
+- Auto-seed default values into the `settings` table on first visit to `/settings`
 
 ### Step 6: Run the server
 
@@ -280,23 +323,56 @@ Assessable income  = Taxable income − 11,000,000 − (4,400,000 × dependants)
 NET PAY = Gross take-home − Advances − 10.5% SI − PIT
 ```
 
+## Configurable Formulas (`/settings`)
+
+All numbers used in the formulas above can be edited **directly in the web UI**,
+no code change required. When the tax law or company policy changes, open the
+**Settings** menu to update — payrolls will be recalculated on next view.
+
+The `/settings` page has 3 tabs:
+
+**1. PIT formula parameters**
+
+| Key | Default | Meaning |
+|---|---|---|
+| `tax.personal_deduction` | 11,000,000 | Personal deduction / month |
+| `tax.dependent_deduction` | 4,400,000 | Deduction / dependant / month |
+| `tax.bhxh_rate` | 0.105 | Employee social-insurance contribution rate |
+
+**2. Progressive PIT brackets** — add / remove / edit each bracket
+(Limit / Rate / Subtractor). Set **Limit = 0** for the top open-ended bracket;
+brackets are auto-sorted by `limit` ascending on save.
+
+**3. Payroll formula parameters**
+
+| Key | Default | Meaning |
+|---|---|---|
+| `payroll.standard_days` | 26 | Standard working days / month |
+| `payroll.meal_per_day` | 30,000 | Meal allowance / workday |
+| `payroll.meal_per_ot_shift` | 30,000 | Meal allowance / overtime shift |
+| `payroll.sunday_multiplier` | 2 | Sunday work multiplier |
+| `payroll.overtime_multiplier` | 0.5 | Overtime shift multiplier (in workday units) |
+
+A **Reset to defaults** button restores every parameter to its original value.
+
 ## Folder Structure
 
 ```
 tax-calculator/
 ├── app/
-│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController
-│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll
-│   └── Services/            TaxService, PayrollService
+│   ├── Http/Controllers/    HomeController, EmployeeController, AttendanceController, PayrollController, SettingController
+│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
+│   └── Services/            TaxService, PayrollService, SettingService
 ├── database/
-│   ├── migrations/          7 migration files
+│   ├── migrations/          8 migration files
 │   └── seeders/             DatabaseSeeder (5 sample employees)
 ├── resources/views/
 │   ├── layouts/app.blade.php
 │   ├── home.blade.php
 │   ├── employees/
 │   ├── attendance/
-│   └── payroll/
+│   ├── payroll/
+│   └── settings/
 ├── routes/web.php
 └── .env
 ```
@@ -310,6 +386,7 @@ tax-calculator/
 | `/attendance?year=YYYY&month=M` | Monthly attendance |
 | `/payroll?year=YYYY&month=M` | Company-wide payroll table |
 | `/payroll/{id}/{year}/{month}` | Detailed payslip for one employee |
+| `/settings` | Configure tax &amp; payroll formulas |
 
 ## Sample employee codes after seeding
 

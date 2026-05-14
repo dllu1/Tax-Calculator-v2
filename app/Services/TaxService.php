@@ -8,9 +8,28 @@ class TaxService
     public const DEPENDENT_DEDUCTION = 4_400_000;
     public const BHXH_RATE = 0.105;
 
+    public function __construct(private readonly SettingService $settings)
+    {
+    }
+
+    public function personalDeductionAmount(): float
+    {
+        return $this->settings->number('tax.personal_deduction', self::PERSONAL_DEDUCTION);
+    }
+
+    public function dependentDeductionAmount(): float
+    {
+        return $this->settings->number('tax.dependent_deduction', self::DEPENDENT_DEDUCTION);
+    }
+
+    public function bhxhRate(): float
+    {
+        return $this->settings->number('tax.bhxh_rate', self::BHXH_RATE);
+    }
+
     /**
-     * 5 bậc lũy tiến từng phần - dùng công thức rút gọn (Thông tư 111/2013/TT-BTC)
-     * Trả về: ['tax' => số tiền thuế, 'rate' => % bậc cao nhất, 'deduction' => khấu trừ]
+     * Biểu thuế lũy tiến (có thể cấu hình từ trang Cài đặt).
+     * Bậc cuối nên có limit = 0 (không giới hạn).
      */
     public function calculatePIT(float $assessableIncome): array
     {
@@ -18,40 +37,29 @@ class TaxService
             return ['tax' => 0.0, 'rate' => 0, 'deduction' => 0];
         }
 
-        // Đơn vị: VNĐ
-        $brackets = [
-            ['limit' =>  10_000_000, 'rate' => 0.05, 'deduction' =>          0],
-            ['limit' =>  18_000_000, 'rate' => 0.10, 'deduction' =>    250_000],
-            ['limit' =>  32_000_000, 'rate' => 0.15, 'deduction' =>    750_000],
-            ['limit' =>  52_000_000, 'rate' => 0.20, 'deduction' =>  1_650_000],
-            ['limit' =>  80_000_000, 'rate' => 0.25, 'deduction' =>  3_250_000],
-            ['limit' => 999_999_999_999, 'rate' => 0.30, 'deduction' =>  5_850_000],
-            // bậc 7
-            ['limit' => PHP_INT_MAX, 'rate' => 0.35, 'deduction' =>  9_850_000],
-        ];
-
-        // User dùng công thức rút gọn theo "thu nhập tính thuế" (assessable):
-        //   0-10tr:   5%
-        //   10-30tr:  10% - 500.000
-        //   30-60tr:  20% - 3.500.000
-        //   60-100tr: 30% - 9.500.000
-        //   > 100tr:  35% - 14.500.000
-        // -> Áp công thức này cho đúng yêu cầu của user:
-        $rules = [
-            ['limit' =>  10_000_000, 'rate' => 0.05, 'deduction' =>          0],
-            ['limit' =>  30_000_000, 'rate' => 0.10, 'deduction' =>    500_000],
-            ['limit' =>  60_000_000, 'rate' => 0.20, 'deduction' =>  3_500_000],
-            ['limit' => 100_000_000, 'rate' => 0.30, 'deduction' =>  9_500_000],
-            ['limit' => PHP_INT_MAX,  'rate' => 0.35, 'deduction' => 14_500_000],
-        ];
+        $rules = $this->settings->brackets();
+        if (empty($rules)) {
+            $rules = [
+                ['limit' => 10_000_000,  'rate' => 0.05, 'deduction' => 0],
+                ['limit' => 30_000_000,  'rate' => 0.10, 'deduction' => 500_000],
+                ['limit' => 60_000_000,  'rate' => 0.20, 'deduction' => 3_500_000],
+                ['limit' => 100_000_000, 'rate' => 0.30, 'deduction' => 9_500_000],
+                ['limit' => 0,           'rate' => 0.35, 'deduction' => 14_500_000],
+            ];
+        }
 
         foreach ($rules as $rule) {
-            if ($assessableIncome <= $rule['limit']) {
-                $tax = $assessableIncome * $rule['rate'] - $rule['deduction'];
+            $limit = (float) ($rule['limit'] ?? 0);
+            $rate = (float) ($rule['rate'] ?? 0);
+            $deduction = (float) ($rule['deduction'] ?? 0);
+            $isLast = $limit <= 0;
+
+            if ($isLast || $assessableIncome <= $limit) {
+                $tax = $assessableIncome * $rate - $deduction;
                 return [
                     'tax' => max(0.0, round($tax, 0)),
-                    'rate' => $rule['rate'],
-                    'deduction' => $rule['deduction'],
+                    'rate' => $rate,
+                    'deduction' => $deduction,
                 ];
             }
         }
@@ -61,11 +69,11 @@ class TaxService
 
     public function personalDeduction(int $dependents = 0): float
     {
-        return self::PERSONAL_DEDUCTION + ($dependents * self::DEPENDENT_DEDUCTION);
+        return $this->personalDeductionAmount() + ($dependents * $this->dependentDeductionAmount());
     }
 
     public function bhxhAmount(float $bhxhSalary): float
     {
-        return round($bhxhSalary * self::BHXH_RATE, 0);
+        return round($bhxhSalary * $this->bhxhRate(), 0);
     }
 }

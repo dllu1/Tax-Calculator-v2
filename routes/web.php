@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -30,3 +31,8 @@ Route::post('/employees/{employee}/advance', [PayrollController::class, 'saveAdv
     ->name('advance.store');
 Route::delete('/advance/{advance}', [PayrollController::class, 'deleteAdvance'])
     ->name('advance.destroy');
+
+Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::put('/settings/brackets', [SettingController::class, 'updateBrackets'])->name('settings.brackets.update');
+Route::post('/settings/reset', [SettingController::class, 'reset'])->name('settings.reset');

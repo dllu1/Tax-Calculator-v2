@@ -32,6 +32,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ route('employees.index') }}">Nhân viên</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('attendance.index') }}">Chấm công</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('payroll.index') }}">Bảng lương</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('settings.index') }}"><i class="bi bi-sliders"></i> Cấu hình</a></li>
             </ul>
             <form action="{{ route('home.search') }}" method="POST" class="d-flex">
                 @csrf

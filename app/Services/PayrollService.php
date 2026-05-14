@@ -15,8 +15,10 @@ class PayrollService
     public const MEAL_PER_DAY = 30_000;
     public const MEAL_PER_OT_SHIFT = 30_000;
 
-    public function __construct(private readonly TaxService $tax)
-    {
+    public function __construct(
+        private readonly TaxService $tax,
+        private readonly SettingService $settings,
+    ) {
     }
 
     /**
@@ -27,7 +29,13 @@ class PayrollService
     {
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = $start->copy()->endOfMonth();
-        $daysInMonth = $start->daysInMonth;
+
+        // Tham số có thể cấu hình
+        $standardDays = max(1, (int) $this->settings->number('payroll.standard_days', self::STANDARD_DAYS));
+        $mealPerDay = $this->settings->number('payroll.meal_per_day', self::MEAL_PER_DAY);
+        $mealPerOt = $this->settings->number('payroll.meal_per_ot_shift', self::MEAL_PER_OT_SHIFT);
+        $sundayMultiplier = $this->settings->number('payroll.sunday_multiplier', 2);
+        $overtimeMultiplier = $this->settings->number('payroll.overtime_multiplier', 0.5);
 
         // Đếm công
         $attendances = $employee->attendances()
@@ -62,17 +70,17 @@ class PayrollService
 
         // Lương ngày
         $basicSalary = (float) $employee->basic_salary;
-        $dailyRate = self::STANDARD_DAYS > 0 ? $basicSalary / self::STANDARD_DAYS : 0;
-        // Chủ nhật = 2 ngày công
-        $totalWorkDays = $normalDays + ($sundayDays * 2);
+        $dailyRate = $standardDays > 0 ? $basicSalary / $standardDays : 0;
+        // Chủ nhật áp hệ số cấu hình
+        $totalWorkDays = $normalDays + ($sundayDays * $sundayMultiplier);
         $dayWage = round($dailyRate * $totalWorkDays, 0);
 
-        // Tăng ca 3h = nửa ngày công
-        $overtimeWage = round($dailyRate * 0.5 * $overtimeShifts, 0);
+        // Tăng ca theo hệ số cấu hình
+        $overtimeWage = round($dailyRate * $overtimeMultiplier * $overtimeShifts, 0);
 
         // Tiền ăn (theo ngày có mặt thực tế = normal + sunday)
-        $mealShift = self::MEAL_PER_DAY * ($normalDays + $sundayDays);
-        $mealOvertime = self::MEAL_PER_OT_SHIFT * $overtimeShifts;
+        $mealShift = $mealPerDay * ($normalDays + $sundayDays);
+        $mealOvertime = $mealPerOt * $overtimeShifts;
 
         // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). Bỏ qua "leave" (nghỉ phép có lý do).
         $diligence = $absentDays === 0 && ($normalDays + $sundayDays) > 0
@@ -88,8 +96,8 @@ class PayrollService
         $taxableIncome = $basicSalary + $productSalary + $taxableAllowances;
 
         // Giảm trừ
-        $personalDeduction = TaxService::PERSONAL_DEDUCTION;
-        $dependentDeduction = $employee->dependents * TaxService::DEPENDENT_DEDUCTION;
+        $personalDeduction = $this->tax->personalDeductionAmount();
+        $dependentDeduction = $employee->dependents * $this->tax->dependentDeductionAmount();
         $bhxhAmount = $this->tax->bhxhAmount((float) $employee->bhxh_salary);
 
         // TN chịu thuế
@@ -106,6 +114,13 @@ class PayrollService
             'total_work_days' => $totalWorkDays,
             'pit_rate' => $pit['rate'],
             'pit_deduction' => $pit['deduction'],
+            'config' => [
+                'standard_days' => $standardDays,
+                'meal_per_day' => $mealPerDay,
+                'meal_per_ot_shift' => $mealPerOt,
+                'sunday_multiplier' => $sundayMultiplier,
+                'overtime_multiplier' => $overtimeMultiplier,
+            ],
         ];
 
         return DB::transaction(function () use (
