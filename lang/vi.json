@@ -32,7 +32,7 @@
 
     "home.intro": "<strong>Tập I của Niên Giám Lương</strong> trình bày toàn bộ quy trình quản lý nhân sự, chấm công và — quan trọng hơn cả — máy tính Thuế Thu nhập Cá nhân theo biểu thuế lũy tiến năm bậc hiện hành. Mọi tham số đều có thể tinh chỉnh ở mục <em>Cấu Hình</em>; bảng lương sẽ tự tính lại mỗi khi tham số thay đổi. Các con số dưới đây được cập nhật đến thời điểm phát hành.",
     "home.brackets_lede": "Áp dụng cho cá nhân cư trú tại Việt Nam — thuế tính trên <em>thu nhập tính thuế</em> theo tháng (sau khi đã giảm trừ gia cảnh và bảo hiểm bắt buộc).",
-    "home.brackets_footnote": "* Đây là biểu thuế mặc định và có thể chỉnh sửa ở mục <a href=\":url\">Cấu Hình → Biểu Thuế Lũy Tiến</a>.",
+    "home.brackets_footnote": "* Đây là biểu thuế mặc định và có thể chỉnh sửa ở mục <a href=\"settings\">Cấu Hình → Biểu Thuế Lũy Tiến</a>.",
     "settings.brackets_lede": "<strong>Biểu thuế lũy tiến.</strong> Mỗi bậc gồm: <em>Giới hạn trên</em> (thu nhập tính thuế ≤ giới hạn → áp dụng bậc này), <em>Thuế suất</em> (0.05 = 5%), <em>Khấu trừ</em> (số bị trừ trong công thức rút gọn). Đặt <strong>Giới hạn = 0</strong> cho bậc cao nhất (không giới hạn). Công thức: <code>Thuế = Thu nhập tính thuế × Thuế suất − Khấu trừ</code>",
 
     "Nửa ngày": "Nửa ngày",
