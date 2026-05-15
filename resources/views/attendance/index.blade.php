@@ -50,10 +50,9 @@
     </div>
 
     @php
-        // Sunday days: drop weekday-only types (normal, half) — those imply
-        // weekday rates and would surface a mismatched cell in the payroll
-        // calc. Weekdays: drop 'sunday' since the rate doubler only kicks in
-        // on actual Sundays.
+        // Sunday: render a single CHECKBOX toggle for 'sunday' — the user can
+        // click to mark a Sunday shift, click again to clear (deletes the row).
+        // Weekdays: keep the radio-button group with no 'sunday' option.
         $isSunday = $date->isSunday();
         $allOptions = [
             'normal' => ['label' => __('Đi làm'),     'icon' => 'bi-check-lg',   'class' => 'success'],
@@ -63,7 +62,7 @@
             'absent' => ['label' => __('Không phép'), 'icon' => 'bi-x-lg',       'class' => 'danger'],
         ];
         $allowedKeys = $isSunday
-            ? ['sunday', 'leave', 'absent']
+            ? ['sunday']
             : ['normal', 'half', 'leave', 'absent'];
     @endphp
 
@@ -87,7 +86,7 @@
                 <tr>
                     <th style="width:48px">#</th>
                     <th>{{ __('Nhân viên') }}</th>
-                    <th style="min-width:{{ $isSunday ? '320' : '420' }}px">{{ __('Trạng thái') }}</th>
+                    <th style="min-width:{{ $isSunday ? '140' : '420' }}px">{{ __('Trạng thái') }}</th>
                     <th style="width:140px" class="num">{{ __('Tăng ca (ca 3h)') }}</th>
                 </tr>
             </thead>
@@ -106,28 +105,41 @@
                     </td>
                     <td>
                         <div class="btn-group" role="group" data-emp="{{ $emp->id }}">
-                            @foreach ($allowedKeys as $val)
-                                @php $opt = $allOptions[$val]; @endphp
-                                <input type="radio" class="btn-check"
+                            @if ($isSunday)
+                                {{-- Sunday: single CHECKBOX toggle. Checked = mark Sunday shift, unchecked = no record (deletes on save). --}}
+                                @php $opt = $allOptions['sunday']; @endphp
+                                <input type="checkbox" class="btn-check"
                                        name="rows[{{ $emp->id }}][type]"
-                                       id="r_{{ $emp->id }}_{{ $val }}"
-                                       value="{{ $val }}"
-                                       {{ $currentType === $val ? 'checked' : '' }}>
-                                <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $val }}">
+                                       id="r_{{ $emp->id }}_sunday"
+                                       value="sunday"
+                                       {{ $currentType === 'sunday' ? 'checked' : '' }}>
+                                <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_sunday">
                                     <i class="bi {{ $opt['icon'] }}"></i> {{ $opt['label'] }}
                                 </label>
-                            @endforeach
-                            {{-- If the saved type is no longer in $allowedKeys (e.g. a 'sunday' record from a previous schema), surface it so the user sees the stale value instead of it silently dropping on next save. --}}
-                            @if ($currentType && !in_array($currentType, $allowedKeys, true) && isset($allOptions[$currentType]))
-                                @php $stale = $allOptions[$currentType]; @endphp
-                                <input type="radio" class="btn-check"
-                                       name="rows[{{ $emp->id }}][type]"
-                                       id="r_{{ $emp->id }}_{{ $currentType }}"
-                                       value="{{ $currentType }}" checked>
-                                <label class="btn btn-outline-{{ $stale['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $currentType }}"
-                                       title="{{ __('Loại không phù hợp với ngày này — lưu lại để dọn dẹp.') }}">
-                                    <i class="bi {{ $stale['icon'] }}"></i> {{ $stale['label'] }}<sup>*</sup>
-                                </label>
+                            @else
+                                @foreach ($allowedKeys as $val)
+                                    @php $opt = $allOptions[$val]; @endphp
+                                    <input type="radio" class="btn-check"
+                                           name="rows[{{ $emp->id }}][type]"
+                                           id="r_{{ $emp->id }}_{{ $val }}"
+                                           value="{{ $val }}"
+                                           {{ $currentType === $val ? 'checked' : '' }}>
+                                    <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $val }}">
+                                        <i class="bi {{ $opt['icon'] }}"></i> {{ $opt['label'] }}
+                                    </label>
+                                @endforeach
+                                {{-- Stale-value escape hatch only on weekdays — Sunday rule is strict "one button only". --}}
+                                @if ($currentType && !in_array($currentType, $allowedKeys, true) && isset($allOptions[$currentType]))
+                                    @php $stale = $allOptions[$currentType]; @endphp
+                                    <input type="radio" class="btn-check"
+                                           name="rows[{{ $emp->id }}][type]"
+                                           id="r_{{ $emp->id }}_{{ $currentType }}"
+                                           value="{{ $currentType }}" checked>
+                                    <label class="btn btn-outline-{{ $stale['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $currentType }}"
+                                           title="{{ __('Loại không phù hợp với ngày này — lưu lại để dọn dẹp.') }}">
+                                        <i class="bi {{ $stale['icon'] }}"></i> {{ $stale['label'] }}<sup>*</sup>
+                                    </label>
+                                @endif
                             @endif
                         </div>
                     </td>
@@ -168,7 +180,9 @@
         const value = btn.dataset.value || '';
         document.querySelectorAll('[data-emp]').forEach(group => {
             const empId = group.dataset.emp;
-            group.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+            // Sunday view uses a single checkbox; weekday view uses radios.
+            // input.btn-check covers both kinds.
+            group.querySelectorAll('input.btn-check').forEach(r => r.checked = false);
             if (value) {
                 const target = document.getElementById(`r_${empId}_${value}`);
                 if (target) target.checked = true;
