@@ -1,6 +1,15 @@
 @extends('layouts.app')
 @section('title', __('Phiếu lương').' '.$employee->full_name)
 
+@push('scripts')
+<style>
+    @media print {
+        @page { size: A4; margin: 14mm 16mm; }
+        .gz-masthead, .gz-footer { display: none !important; }
+    }
+</style>
+@endpush
+
 @php
     $fmt = fn($n) => number_format($n, 0, ',', '.');
     $keepRatio = $payroll->total_income > 0
@@ -13,6 +22,8 @@
 @endphp
 
 @section('content')
+
+<div class="no-print">
 
 {{-- ===================== HEADER ===================== --}}
 <div class="gz-section-rule">
@@ -343,6 +354,157 @@
             </tbody>
         </table>
     </div>
+</div>
+
+</div> {{-- /.no-print --}}
+
+{{-- ============================================================ --}}
+{{-- ===== PHIẾU LƯƠNG IN — COMPACT 1 TRANG A4 (PRINT ONLY) ===== --}}
+{{-- ============================================================ --}}
+@php
+    $employerBhxhRate = 0.215; // BHXH+BHYT+BHTN chủ SD đóng (Vietnamese standard)
+    $employerBhxhAmount = round($employerBhxhRate * (float) $employee->bhxh_salary, 0);
+    $employeeBhxhRate = $payroll->bhxh_amount > 0 && $employee->bhxh_salary > 0
+        ? $payroll->bhxh_amount / $employee->bhxh_salary
+        : 0.105;
+    $mealDays = $payroll->normal_days + $payroll->sunday_days + $payroll->half_days;
+    $mealPerDay = (int) ($payroll->detail['config']['meal_per_day'] ?? 30000);
+    $mealPerOt = (int) ($payroll->detail['config']['meal_per_ot_shift'] ?? 30000);
+    $otMultiplier = (float) ($payroll->detail['config']['overtime_multiplier'] ?? 0.5);
+    $otRate = round(($payroll->detail['daily_rate'] ?? 0) * $otMultiplier, 0);
+@endphp
+
+<div class="print-only payslip-print">
+    <div class="payslip-header">
+        <div class="payslip-code-box">{{ $employee->employee_code }}</div>
+        <h1 class="payslip-title">PHIẾU TÍNH LƯƠNG</h1>
+        <div class="payslip-period">THÁNG {{ str_pad($month, 2, '0', STR_PAD_LEFT) }} NĂM {{ $year }}</div>
+    </div>
+
+    <div class="payslip-emp-row">
+        <div class="payslip-emp-name">{{ mb_strtoupper($employee->full_name, 'UTF-8') }}</div>
+        <div class="payslip-emp-salary">
+            <span class="lbl"><em>Lương tháng</em></span>
+            <span class="val">{{ $fmt($employee->basic_salary) }}</span>
+        </div>
+    </div>
+
+    <table class="payslip-table">
+        <thead>
+            <tr>
+                <th class="col-label">Danh mục</th>
+                <th class="col-days">Số ngày</th>
+                <th class="col-rate">Lương ngày</th>
+                <th class="col-amount">Số tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lương ngày</td>
+                <td class="num">{{ number_format($payroll->detail['total_work_days'] ?? 0, 2, ',', '.') }}</td>
+                <td class="num">{{ $fmt(round($payroll->detail['daily_rate'] ?? 0)) }}</td>
+                <td class="num">{{ $fmt($payroll->day_wage) }}</td>
+            </tr>
+            @if ($payroll->overtime_shifts > 0)
+            <tr>
+                <td>Tăng ca</td>
+                <td class="num">{{ number_format($payroll->overtime_shifts, 2, ',', '.') }}</td>
+                <td class="num">{{ $fmt($otRate) }}</td>
+                <td class="num">{{ $fmt($payroll->overtime_wage) }}</td>
+            </tr>
+            @endif
+            @if ($payroll->meal_shift > 0)
+            <tr>
+                <td>Tiền ăn giữa ca</td>
+                <td class="num">{{ $mealDays }}</td>
+                <td class="num">{{ $fmt($mealPerDay) }}</td>
+                <td class="num">{{ $fmt($payroll->meal_shift) }}</td>
+            </tr>
+            @endif
+            @if ($payroll->meal_overtime > 0)
+            <tr>
+                <td>Tiền ăn tăng ca</td>
+                <td class="num">{{ $payroll->overtime_shifts }}</td>
+                <td class="num">{{ $fmt($mealPerOt) }}</td>
+                <td class="num">{{ $fmt($payroll->meal_overtime) }}</td>
+            </tr>
+            @endif
+            @if ($payroll->product_salary > 0)
+            <tr>
+                <td>Lương sản phẩm</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->product_salary) }}</td>
+            </tr>
+            @endif
+            @foreach ($allowances as $a)
+            <tr>
+                <td>{{ $a->name }}</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($a->amount) }}</td>
+            </tr>
+            @endforeach
+            @if ($payroll->diligence > 0)
+            <tr>
+                <td>Chuyên cần</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->diligence) }}</td>
+            </tr>
+            @endif
+            @if (($payroll->half_day_amount ?? 0) > 0)
+            <tr>
+                <td>Lương nửa ngày ({{ $payroll->half_days }} nửa ngày)</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->half_day_amount) }}</td>
+            </tr>
+            @endif
+            <tr class="strikethrough">
+                <td>BHXH, BHYT (21,5%) <em>— chủ SD đóng</em></td>
+                <td class="num">{{ number_format($employerBhxhRate, 3, ',', '.') }}</td>
+                <td class="num">{{ $fmt($employee->bhxh_salary) }}</td>
+                <td class="num">{{ $fmt($employerBhxhAmount) }}</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="3" class="lbl">Tổng tiền lương</td>
+                <td class="num">{{ $fmt($payroll->total_income) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="payslip-table payslip-deduct">
+        <tbody>
+            <tr>
+                <td rowspan="{{ 1 + ($payroll->pit_amount > 0 ? 1 : 0) + ($payroll->advance > 0 ? 1 : 0) }}" class="rowhead">Trừ tiền</td>
+                <td>BHXH (10,5%)</td>
+                <td class="num">{{ number_format($employeeBhxhRate, 3, ',', '.') }}</td>
+                <td class="num">{{ $fmt($employee->bhxh_salary) }}</td>
+                <td class="num">{{ $fmt($payroll->bhxh_amount) }}</td>
+            </tr>
+            @if ($payroll->pit_amount > 0)
+            <tr>
+                <td>Thuế TNCN</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->pit_amount) }}</td>
+            </tr>
+            @endif
+            @if ($payroll->advance > 0)
+            <tr>
+                <td>Tạm ứng</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->advance) }}</td>
+            </tr>
+            @endif
+            <tr class="net-row">
+                <td colspan="4" class="lbl">Thực lãnh</td>
+                <td class="num">{{ $fmt($payroll->net_salary) }}</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
 @push('scripts')

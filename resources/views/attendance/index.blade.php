@@ -126,8 +126,7 @@
         </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-3 pt-3"
-             style="border-top:1px solid var(--gz-rule);">
+        <div class="att-save-bar d-flex justify-content-between align-items-center">
             <small class="text-muted"><em>{{ $employees->count() }} {{ __('nhân viên') }} · {{ __('Ngày') }} {{ $date->format('d/m/Y') }}</em></small>
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="bi bi-save-fill"></i> {{ __('Lưu Chấm Công') }}

@@ -5,10 +5,36 @@
 <style>
     @media print {
         @page { size: A4 landscape; margin: 8mm 10mm; }
+        html, body { background: #fff !important; color: #000 !important; }
+        .gz-nav, .gz-footer, .no-print, .alert, .legend-row { display: none !important; }
+        .gz-section-rule, .gz-card-head { margin: 0 0 4pt 0 !important; }
+        .gz-section-title { font-size: 12pt !important; color: #000 !important; }
+        .gz-section-lede { display: none !important; }
+
         .table-responsive { overflow: visible !important; max-height: none !important; }
-        .gz-grid-table { min-width: auto !important; width: 100% !important; font-size: 9pt; }
-        .gz-grid-table th, .gz-grid-table td { padding: 2px 3px !important; }
-        .att-cell { min-width: 0 !important; }
+        .gz-grid-table {
+            min-width: auto !important;
+            width: 100% !important;
+            font-size: 8.5pt;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+        }
+        .gz-grid-table thead { display: table-header-group; }
+        .gz-grid-table tr { page-break-inside: avoid !important; }
+        .gz-grid-table th, .gz-grid-table td {
+            padding: 2px 3px !important;
+            background: #fff !important;
+            color: #000 !important;
+            border: 0.5pt solid #888 !important;
+        }
+        .gz-grid-table thead th {
+            background: #eee !important;
+            font-weight: bold !important;
+        }
+        .gz-grid-table .sunday-col { background: #ddd !important; }
+        .att-cell { min-width: 0 !important; background: #fff !important; }
+        .att-cell a { color: #000 !important; text-decoration: none !important; }
+        .att-absent a { font-weight: bold !important; }
     }
 </style>
 @endpush
@@ -52,7 +78,7 @@
 </div>
 
 <div class="gz-card">
-    <div class="d-flex gap-3 flex-wrap mb-3 align-items-center" style="font-size:0.85rem;">
+    <div class="d-flex gap-3 flex-wrap mb-3 align-items-center no-print" style="font-size:0.85rem;">
         <span class="gz-label">{{ __('Chú thích:') }}</span>
         <span><span class="badge att-normal" style="padding:2px 8px; border-radius:0;">N</span> {{ __('Ngày thường') }}</span>
         <span><span class="badge att-half" style="padding:2px 8px; border-radius:0;">½</span> {{ __('Nửa ngày') }}</span>

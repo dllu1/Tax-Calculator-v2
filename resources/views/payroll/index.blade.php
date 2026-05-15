@@ -62,8 +62,8 @@
 </div>
 
 <div class="gz-card">
-    <div class="table-responsive">
-    <table class="gz-table">
+    <div class="table-responsive payroll-scroll" style="max-height: 65vh; overflow-y: auto;">
+    <table class="gz-table payroll-table-sticky">
         <thead>
             <tr>
                 <th style="width:80px">{{ __('Mã NV') }}</th>

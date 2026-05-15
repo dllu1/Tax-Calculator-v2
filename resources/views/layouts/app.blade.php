@@ -744,6 +744,161 @@
         }
         .gz-actions .btn { padding: 0.3rem 0.55rem; min-width: 2.1rem; }
         .gz-actions form { display: inline-flex; margin: 0; }
+
+        /* ===== ATTENDANCE SAVE BAR — sticky at viewport bottom ===== */
+        .att-save-bar {
+            position: sticky;
+            bottom: 0;
+            background: var(--gz-bg);
+            border-top: 1px solid var(--gz-rule);
+            padding: 0.75rem 1rem;
+            margin: 1rem -0.5rem 0;
+            z-index: 200;
+            box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.10);
+        }
+        @media print { .att-save-bar { display: none !important; } }
+
+        /* ===== PAYROLL INDEX — sticky header + totals footer inside scroll ===== */
+        .payroll-scroll {
+            border-bottom: 1px solid var(--gz-rule);
+        }
+        .payroll-table-sticky thead th {
+            position: sticky;
+            top: 0;
+            background: var(--gz-surface-2);
+            z-index: 5;
+            box-shadow: 0 1px 0 var(--gz-rule);
+        }
+        .payroll-table-sticky tfoot tr {
+            position: sticky;
+            bottom: 0;
+            background: var(--gz-surface-2);
+            z-index: 5;
+        }
+        .payroll-table-sticky tfoot td {
+            background: var(--gz-surface-2);
+            border-top: 2px solid var(--gz-ink) !important;
+            box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
+            font-weight: 700;
+        }
+        @media print {
+            .payroll-scroll { max-height: none !important; overflow: visible !important; border: none !important; }
+            .payroll-table-sticky thead th,
+            .payroll-table-sticky tfoot tr,
+            .payroll-table-sticky tfoot td {
+                position: static !important;
+                box-shadow: none !important;
+            }
+        }
+
+        /* ===== PAYSLIP PRINT — compact 1-page payslip ===== */
+        .payslip-print { display: none; }
+        @media print {
+            .payslip-print {
+                display: block !important;
+                font-family: 'Source Serif Pro', 'Times New Roman', serif;
+                color: #000;
+                font-size: 10pt;
+                line-height: 1.35;
+            }
+            .payslip-header {
+                position: relative;
+                text-align: center;
+                margin-bottom: 8pt;
+            }
+            .payslip-code-box {
+                position: absolute;
+                top: 0;
+                right: 0;
+                border: 0.7pt solid #000;
+                padding: 2pt 10pt;
+                font-size: 9.5pt;
+                font-weight: 600;
+                letter-spacing: 0.5pt;
+            }
+            .payslip-title {
+                font-size: 16pt;
+                font-weight: 700;
+                margin: 0 0 2pt 0;
+                letter-spacing: 1pt;
+                font-family: 'Source Serif Pro', 'Times New Roman', serif;
+            }
+            .payslip-period {
+                font-size: 11.5pt;
+                font-style: italic;
+                margin-bottom: 6pt;
+            }
+            .payslip-emp-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin: 6pt 0 8pt 0;
+                font-size: 11pt;
+            }
+            .payslip-emp-name {
+                font-weight: 700;
+                letter-spacing: 0.5pt;
+            }
+            .payslip-emp-salary .lbl {
+                font-style: italic;
+                margin-right: 18pt;
+                color: #000;
+            }
+            .payslip-emp-salary .val {
+                font-weight: 600;
+                font-variant-numeric: tabular-nums;
+            }
+            .payslip-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 10pt;
+                margin-bottom: 6pt;
+            }
+            .payslip-table thead th,
+            .payslip-table tbody td {
+                border: 0.6pt solid #000;
+                padding: 3pt 6pt;
+                vertical-align: middle;
+            }
+            .payslip-table thead th {
+                font-weight: 600;
+                font-style: italic;
+                text-align: center;
+                background: #fff;
+            }
+            .payslip-table .col-label { width: 40%; }
+            .payslip-table .col-days { width: 14%; text-align: center; }
+            .payslip-table .col-rate { width: 20%; text-align: right; }
+            .payslip-table .col-amount { width: 26%; text-align: right; }
+            .payslip-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+            .payslip-table tr.strikethrough td {
+                text-decoration: line-through;
+                color: #444;
+            }
+            .payslip-table tr.total-row td {
+                border-top: 1.2pt solid #000 !important;
+                font-weight: 700;
+                font-style: italic;
+            }
+            .payslip-table tr.total-row td.lbl { text-align: center; }
+            .payslip-deduct td { border: 0.6pt solid #000; padding: 3pt 6pt; }
+            .payslip-deduct td.rowhead {
+                writing-mode: horizontal-tb;
+                text-align: center;
+                font-style: italic;
+                font-weight: 600;
+                width: 56pt;
+            }
+            .payslip-deduct td.num { text-align: right; font-variant-numeric: tabular-nums; }
+            .payslip-deduct tr.net-row td {
+                border-top: 1.2pt solid #000 !important;
+                font-weight: 700;
+            }
+            .payslip-deduct tr.net-row td.lbl { text-align: center; font-style: italic; }
+
+            .payslip-print { page-break-inside: auto; }
+            .payslip-table tr { page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
