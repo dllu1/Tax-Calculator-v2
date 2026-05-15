@@ -1229,6 +1229,8 @@
                 const curMain = document.querySelector('main');
                 if (newMain && curMain) {
                     curMain.replaceWith(newMain);
+                    // Notify pages so they can re-attach handlers to the swapped DOM.
+                    document.dispatchEvent(new CustomEvent('gz:soft-reloaded'));
                 }
             } catch (e) {
                 console.warn('Soft reload failed:', e);

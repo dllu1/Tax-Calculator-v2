@@ -49,13 +49,31 @@
         {{ __('Cuối cùng bấm') }} <strong>"{{ __('Lưu Chấm Công') }}"</strong> {{ __('ở dưới.') }}
     </div>
 
-    <form method="POST" action="{{ route('attendance.save') }}" id="attForm">
+    @php
+        // Sunday days: drop weekday-only types (normal, half) — those imply
+        // weekday rates and would surface a mismatched cell in the payroll
+        // calc. Weekdays: drop 'sunday' since the rate doubler only kicks in
+        // on actual Sundays.
+        $isSunday = $date->isSunday();
+        $allOptions = [
+            'normal' => ['label' => __('Đi làm'),     'icon' => 'bi-check-lg',   'class' => 'success'],
+            'half'   => ['label' => __('Nửa ngày'),   'icon' => 'bi-circle-half','class' => 'info'],
+            'sunday' => ['label' => __('Chủ nhật'),   'icon' => 'bi-sun',        'class' => 'warning'],
+            'leave'  => ['label' => __('Có phép'),    'icon' => 'bi-bookmark',   'class' => 'secondary'],
+            'absent' => ['label' => __('Không phép'), 'icon' => 'bi-x-lg',       'class' => 'danger'],
+        ];
+        $allowedKeys = $isSunday
+            ? ['sunday', 'leave', 'absent']
+            : ['normal', 'half', 'leave', 'absent'];
+    @endphp
+
+    <form method="POST" action="{{ route('attendance.save') }}" id="attForm" data-ajax="true" data-soft-reload="true">
         @csrf
         <input type="hidden" name="date" value="{{ $date->format('Y-m-d') }}">
 
         <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
             <span class="gz-label">{{ __('Điền nhanh cho cả danh sách:') }}</span>
-            <button type="button" class="btn btn-sm btn-outline-success js-fill-all" data-value="{{ $date->isSunday() ? 'sunday' : 'normal' }}">
+            <button type="button" class="btn btn-sm btn-outline-success js-fill-all" data-value="{{ $isSunday ? 'sunday' : 'normal' }}">
                 <i class="bi bi-check-all"></i> {{ __('Đi Làm Hết') }}
             </button>
             <button type="button" class="btn btn-sm btn-outline-danger js-fill-all" data-value="">
@@ -69,7 +87,7 @@
                 <tr>
                     <th style="width:48px">#</th>
                     <th>{{ __('Nhân viên') }}</th>
-                    <th style="min-width:480px">{{ __('Trạng thái') }}</th>
+                    <th style="min-width:{{ $isSunday ? '320' : '420' }}px">{{ __('Trạng thái') }}</th>
                     <th style="width:140px" class="num">{{ __('Tăng ca (ca 3h)') }}</th>
                 </tr>
             </thead>
@@ -88,25 +106,29 @@
                     </td>
                     <td>
                         <div class="btn-group" role="group" data-emp="{{ $emp->id }}">
-                            @php
-                                $options = [
-                                    ['val' => 'normal', 'label' => __('Đi làm'),     'icon' => 'bi-check-lg',  'class' => 'success'],
-                                    ['val' => 'half',   'label' => __('Nửa ngày'),   'icon' => 'bi-circle-half','class' => 'info'],
-                                    ['val' => 'sunday', 'label' => __('Chủ nhật'),   'icon' => 'bi-sun',       'class' => 'warning'],
-                                    ['val' => 'leave',  'label' => __('Có phép'),    'icon' => 'bi-bookmark',  'class' => 'secondary'],
-                                    ['val' => 'absent', 'label' => __('Không phép'), 'icon' => 'bi-x-lg',      'class' => 'danger'],
-                                ];
-                            @endphp
-                            @foreach ($options as $opt)
+                            @foreach ($allowedKeys as $val)
+                                @php $opt = $allOptions[$val]; @endphp
                                 <input type="radio" class="btn-check"
                                        name="rows[{{ $emp->id }}][type]"
-                                       id="r_{{ $emp->id }}_{{ $opt['val'] }}"
-                                       value="{{ $opt['val'] }}"
-                                       {{ $currentType === $opt['val'] ? 'checked' : '' }}>
-                                <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $opt['val'] }}">
+                                       id="r_{{ $emp->id }}_{{ $val }}"
+                                       value="{{ $val }}"
+                                       {{ $currentType === $val ? 'checked' : '' }}>
+                                <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $val }}">
                                     <i class="bi {{ $opt['icon'] }}"></i> {{ $opt['label'] }}
                                 </label>
                             @endforeach
+                            {{-- If the saved type is no longer in $allowedKeys (e.g. a 'sunday' record from a previous schema), surface it so the user sees the stale value instead of it silently dropping on next save. --}}
+                            @if ($currentType && !in_array($currentType, $allowedKeys, true) && isset($allOptions[$currentType]))
+                                @php $stale = $allOptions[$currentType]; @endphp
+                                <input type="radio" class="btn-check"
+                                       name="rows[{{ $emp->id }}][type]"
+                                       id="r_{{ $emp->id }}_{{ $currentType }}"
+                                       value="{{ $currentType }}" checked>
+                                <label class="btn btn-outline-{{ $stale['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $currentType }}"
+                                       title="{{ __('Loại không phù hợp với ngày này — lưu lại để dọn dẹp.') }}">
+                                    <i class="bi {{ $stale['icon'] }}"></i> {{ $stale['label'] }}<sup>*</sup>
+                                </label>
+                            @endif
                         </div>
                     </td>
                     <td class="num">
@@ -138,7 +160,12 @@
 @push('scripts')
 <script>
 (function () {
-    function fillAll(value) {
+    // Use event delegation — direct listeners on .js-fill-all wouldn't survive
+    // the soft-reload that swaps <main> after each AJAX save.
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.js-fill-all');
+        if (!btn) return;
+        const value = btn.dataset.value || '';
         document.querySelectorAll('[data-emp]').forEach(group => {
             const empId = group.dataset.emp;
             group.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
@@ -147,28 +174,23 @@
                 if (target) target.checked = true;
             }
         });
-    }
-    document.querySelectorAll('.js-fill-all').forEach(btn => {
-        btn.addEventListener('click', () => fillAll(btn.dataset.value || ''));
     });
 
-    // Detect when the save bar is "stuck" (floating above hidden content) vs at its
-    // natural end-of-form position. When the element BEFORE the bar (the table wrapper)
-    // has its bottom edge above viewport bottom minus bar height, the bar has reached
-    // its natural slot and should shrink to container width.
-    const bar = document.querySelector('.att-save-bar');
-    if (bar) {
+    // Save bar sticky-state detection. Re-queries the DOM on each call so the
+    // logic still works against the freshly swapped <main> after a soft reload.
+    const updateStuck = () => {
+        const bar = document.querySelector('.att-save-bar');
+        if (!bar) return;
         const sentinel = bar.previousElementSibling;
-        const updateStuck = () => {
-            if (!sentinel) { bar.classList.add('is-stuck'); return; }
-            const sRect = sentinel.getBoundingClientRect();
-            const barH = bar.offsetHeight;
-            bar.classList.toggle('is-stuck', sRect.bottom > window.innerHeight - barH - 1);
-        };
-        updateStuck();
-        window.addEventListener('scroll', updateStuck, { passive: true });
-        window.addEventListener('resize', updateStuck);
-    }
+        if (!sentinel) { bar.classList.add('is-stuck'); return; }
+        const sRect = sentinel.getBoundingClientRect();
+        const barH = bar.offsetHeight;
+        bar.classList.toggle('is-stuck', sRect.bottom > window.innerHeight - barH - 1);
+    };
+    updateStuck();
+    window.addEventListener('scroll', updateStuck, { passive: true });
+    window.addEventListener('resize', updateStuck);
+    document.addEventListener('gz:soft-reloaded', updateStuck);
 })();
 </script>
 @endpush
