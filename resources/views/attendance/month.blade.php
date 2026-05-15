@@ -3,38 +3,97 @@
 
 @push('scripts')
 <style>
+    /* ===== B&W Excel-style attendance grid for print ===== */
     @media print {
-        @page { size: A4 landscape; margin: 8mm 10mm; }
-        html, body { background: #fff !important; color: #000 !important; }
-        .gz-nav, .gz-footer, .no-print, .alert, .legend-row { display: none !important; }
-        .gz-section-rule, .gz-card-head { margin: 0 0 4pt 0 !important; }
-        .gz-section-title { font-size: 12pt !important; color: #000 !important; }
+        @page { size: A4 landscape; margin: 8mm 8mm; }
+
+        html, body {
+            background: #fff !important;
+            color: #000 !important;
+            font-family: 'IBM Plex Mono', Consolas, monospace !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .gz-nav, .gz-footer, .no-print, .alert { display: none !important; }
+        main.container, .container { max-width: 100% !important; padding: 0 !important; }
+
+        /* Tight masthead — keep month/title; drop the lede paragraph. */
+        .gz-section-rule { margin: 0 0 3pt 0 !important; }
+        .gz-section-rule::before, .gz-section-rule::after { border-color: #000 !important; }
+        .gz-section-rule-text { color: #000 !important; }
+        .gz-section-rule-text em { color: #000 !important; }
+        .gz-section-title { font-size: 11pt !important; color: #000 !important; margin: 0 0 3pt 0 !important; }
         .gz-section-lede { display: none !important; }
+        .gz-card-head { margin: 0 0 4pt 0 !important; }
+
+        .gz-card {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
 
         .table-responsive { overflow: visible !important; max-height: none !important; }
+
         .gz-grid-table {
             min-width: auto !important;
             width: 100% !important;
-            font-size: 8.5pt;
+            font-size: 8pt !important;
+            font-family: 'IBM Plex Mono', Consolas, monospace !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
         }
-        .gz-grid-table thead { display: table-header-group; }
-        .gz-grid-table tr { page-break-inside: avoid !important; }
+        /* Repeat headers on every printed page; rows are atomic. */
+        .gz-grid-table thead { display: table-header-group !important; }
+        .gz-grid-table thead.sticky-top { position: static !important; }
+        .gz-grid-table tbody { page-break-inside: auto !important; }
+        .gz-grid-table tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+
         .gz-grid-table th, .gz-grid-table td {
-            padding: 2px 3px !important;
+            padding: 2pt 2pt !important;
             background: #fff !important;
             color: #000 !important;
-            border: 0.5pt solid #888 !important;
+            border: 0.5pt solid #000 !important;
+            text-align: center !important;
+            vertical-align: middle !important;
         }
         .gz-grid-table thead th {
-            background: #eee !important;
-            font-weight: bold !important;
+            background: #d9d9d9 !important;
+            font-weight: 700 !important;
+            border: 0.6pt solid #000 !important;
         }
-        .gz-grid-table .sunday-col { background: #ddd !important; }
-        .att-cell { min-width: 0 !important; background: #fff !important; }
-        .att-cell a { color: #000 !important; text-decoration: none !important; }
-        .att-absent a { font-weight: bold !important; }
+        /* Sunday columns shaded so they read at a glance even without color */
+        .gz-grid-table .sunday-col,
+        .gz-grid-table thead .sunday-col { background: #b8b8b8 !important; }
+        .att-cell.att-sunday { background: #d9d9d9 !important; }
+
+        /* Employee column: left-aligned, slightly wider */
+        .gz-grid-table tbody td:first-child {
+            text-align: left !important;
+            padding: 2pt 4pt !important;
+            font-family: 'IBM Plex Mono', Consolas, monospace !important;
+        }
+        .gz-grid-table tbody td:first-child strong { font-weight: 700 !important; color: #000 !important; }
+        .gz-grid-table tbody td:first-child small {
+            color: #000 !important;
+            font-style: normal !important;
+            font-size: 6.5pt !important;
+        }
+        .gz-grid-table thead th small { color: #000 !important; font-size: 6.5pt !important; }
+
+        /* Cell content: keep the letter codes (N / ½ / CN / P / X), no color */
+        .att-cell {
+            min-width: 0 !important;
+            color: #000 !important;
+        }
+        .att-cell a {
+            color: #000 !important;
+            text-decoration: none !important;
+            font-weight: 600 !important;
+        }
+        .att-cell.att-absent a { font-weight: 800 !important; }
+        .att-cell small { color: #000 !important; font-size: 6.5pt !important; }
     }
 </style>
 @endpush

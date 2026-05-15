@@ -3,6 +3,101 @@
 
 @php $fmt = fn($n) => number_format($n, 0, ',', '.'); @endphp
 
+@push('scripts')
+<style>
+    /* ===== B&W Excel-style monthly payroll summary for print ===== */
+    @media print {
+        @page { size: A4 landscape; margin: 8mm 8mm; }
+
+        html, body {
+            background: #fff !important;
+            color: #000 !important;
+            font-family: 'IBM Plex Mono', Consolas, monospace !important;
+            font-size: 9pt;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .gz-nav, .gz-footer, .no-print, .alert { display: none !important; }
+        main.container, .container { max-width: 100% !important; padding: 0 !important; }
+
+        /* Compact masthead */
+        .gz-section-rule { margin: 0 0 3pt 0 !important; }
+        .gz-section-rule::before, .gz-section-rule::after { border-color: #000 !important; }
+        .gz-section-rule-text, .gz-section-rule-text em { color: #000 !important; }
+        .gz-section-title { font-size: 11pt !important; color: #000 !important; margin: 0 0 3pt 0 !important; }
+        .gz-section-lede { display: none !important; }
+        .gz-card-head { margin: 0 0 4pt 0 !important; }
+
+        /* Hide the 3 summary figure cards — the tfoot row already totals everything */
+        .row.g-3.mb-3 { display: none !important; }
+
+        .gz-card {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .payroll-scroll, .table-responsive {
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+        }
+
+        /* Hide the action-button column on print */
+        .payroll-table-sticky thead th:last-child,
+        .payroll-table-sticky tbody td:last-child,
+        .payroll-table-sticky tfoot td:last-child { display: none !important; }
+
+        .gz-table.payroll-table-sticky {
+            font-family: 'IBM Plex Mono', Consolas, monospace !important;
+            font-size: 9pt !important;
+            border-collapse: collapse !important;
+            width: 100% !important;
+            page-break-inside: auto !important;
+        }
+        .payroll-table-sticky thead { display: table-header-group !important; }
+        .payroll-table-sticky tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+
+        /* Override all sticky positioning + colored text */
+        .payroll-table-sticky thead th,
+        .payroll-table-sticky tfoot tr,
+        .payroll-table-sticky tfoot td {
+            position: static !important;
+            box-shadow: none !important;
+        }
+        .payroll-table-sticky th,
+        .payroll-table-sticky td {
+            background: #fff !important;
+            color: #000 !important;
+            border: 0.5pt solid #000 !important;
+            padding: 2pt 4pt !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+        }
+        .payroll-table-sticky thead th {
+            background: #d9d9d9 !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            border: 0.6pt solid #000 !important;
+        }
+        .payroll-table-sticky tfoot td {
+            background: #d9d9d9 !important;
+            font-weight: 700 !important;
+            border-top: 1.5pt solid #000 !important;
+        }
+        /* Strip color-class accents so the print stays true B&W */
+        .payroll-table-sticky .text-danger,
+        .payroll-table-sticky .text-success { color: #000 !important; }
+        .payroll-table-sticky .fw-bold { font-weight: 700 !important; }
+
+        .payroll-table-sticky .money { text-align: right !important; font-variant-numeric: tabular-nums; }
+        .payroll-table-sticky .num { text-align: center !important; }
+    }
+</style>
+@endpush
+
 @section('content')
 
 <div class="gz-section-rule">
