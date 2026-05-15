@@ -42,7 +42,12 @@ class AttendanceController extends Controller
             'rows' => ['array'],
         ]);
 
-        $date = $data['date'];
+        // Normalize to a Carbon date so Eloquent's `date` cast formats the
+        // lookup value the SAME way it formats the stored value (Y-m-d H:i:s).
+        // Passing a plain 'Y-m-d' string to updateOrCreate would miss existing
+        // rows (stored as '2026-05-15 00:00:00') and trigger a unique-constraint
+        // violation when the INSERT path tries to re-create them.
+        $date = Carbon::parse($data['date'])->startOfDay();
         $rows = $request->input('rows', []);
 
         foreach ($rows as $employeeId => $row) {
@@ -70,13 +75,13 @@ class AttendanceController extends Controller
             }
         }
 
-        $msg = __('Đã lưu chấm công ngày') . ' ' . Carbon::parse($date)->format('d/m/Y');
+        $msg = __('Đã lưu chấm công ngày') . ' ' . $date->format('d/m/Y');
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['ok' => true, 'message' => $msg]);
         }
 
-        return redirect()->route('attendance.index', ['date' => $date])->with('success', $msg);
+        return redirect()->route('attendance.index', ['date' => $date->format('Y-m-d')])->with('success', $msg);
     }
 
     /**
