@@ -1,2 +1,0 @@
-50babca7b6277546772db9628c48b8d7fdf01dd5 7da160b49cfe03a76202c3bfb3cce78ef218534f Dat Luan Lu <ludatluan@gmail.com> 1778857719 +0700	commit: docs: refresh README with new UI features + bump PHP to 8.3
-7da160b49cfe03a76202c3bfb3cce78ef218534f 6f77aa599f5b9cf83f90d2c6b8be92e02c82f732 Dat Luan Lu <ludatluan@gmail.com> 1778858460 +0700	commit: fix(ui+dev): gazette pagination, full-width sticky bar, drop stale seed step

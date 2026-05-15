@@ -28,4 +28,4 @@ Homestead.yaml
 Thumbs.db
 /dist
 /dist/win-unpacked
-.git.backup/
+.git.backup*/
