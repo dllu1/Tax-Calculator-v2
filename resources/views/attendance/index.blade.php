@@ -151,6 +151,24 @@
     document.querySelectorAll('.js-fill-all').forEach(btn => {
         btn.addEventListener('click', () => fillAll(btn.dataset.value || ''));
     });
+
+    // Detect when the save bar is "stuck" (floating above hidden content) vs at its
+    // natural end-of-form position. When the element BEFORE the bar (the table wrapper)
+    // has its bottom edge above viewport bottom minus bar height, the bar has reached
+    // its natural slot and should shrink to container width.
+    const bar = document.querySelector('.att-save-bar');
+    if (bar) {
+        const sentinel = bar.previousElementSibling;
+        const updateStuck = () => {
+            if (!sentinel) { bar.classList.add('is-stuck'); return; }
+            const sRect = sentinel.getBoundingClientRect();
+            const barH = bar.offsetHeight;
+            bar.classList.toggle('is-stuck', sRect.bottom > window.innerHeight - barH - 1);
+        };
+        updateStuck();
+        window.addEventListener('scroll', updateStuck, { passive: true });
+        window.addEventListener('resize', updateStuck);
+    }
 })();
 </script>
 @endpush

@@ -746,19 +746,23 @@
         .gz-actions form { display: inline-flex; margin: 0; }
 
         /* ===== ATTENDANCE SAVE BAR — sticky at viewport bottom ===== */
-        /* Compact like the top nav, breaks out of container to full viewport width */
+        /* Compact like the top nav. Default = container-width (natural position).
+           When floating (.is-stuck added by JS), breaks out to full viewport width. */
         .att-save-bar {
             position: sticky;
             bottom: 0;
             background: var(--gz-bg);
             border-top: 1px solid var(--gz-rule);
-            padding: 0.5rem 0;
+            padding: 0.5rem 0.9rem;
             margin-top: 1rem;
+            z-index: 100;
+            transition: margin 0.18s ease, padding 0.18s ease, box-shadow 0.18s ease;
+        }
+        .att-save-bar.is-stuck {
             margin-left: calc(-1 * (100vw - 100%) / 2);
             margin-right: calc(-1 * (100vw - 100%) / 2);
             padding-left: calc((100vw - 100%) / 2);
             padding-right: calc((100vw - 100%) / 2);
-            z-index: 100;
             box-shadow: 0 -4px 8px -6px rgba(28, 26, 23, 0.18);
         }
         .att-save-bar small {
