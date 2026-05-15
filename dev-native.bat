@@ -29,9 +29,8 @@ copy /Y .env.nativephp .env >NUL
 echo  [+] Ensuring database/database.sqlite exists
 if not exist "database\database.sqlite" type nul > "database\database.sqlite"
 
-echo  [+] Running SQLite migrations + seeds
+echo  [+] Running SQLite migrations (auto-seed handled by NativeAppServiceProvider if DB is empty)
 php artisan migrate --force --no-interaction
-php artisan db:seed --force --no-interaction 2>NUL
 
 echo  [+] Starting NativePHP dev (Electron window will open)
 echo      Press Ctrl+C to stop. The original .env will be restored automatically.

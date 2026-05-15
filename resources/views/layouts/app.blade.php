@@ -746,17 +746,80 @@
         .gz-actions form { display: inline-flex; margin: 0; }
 
         /* ===== ATTENDANCE SAVE BAR — sticky at viewport bottom ===== */
+        /* Compact like the top nav, breaks out of container to full viewport width */
         .att-save-bar {
             position: sticky;
             bottom: 0;
             background: var(--gz-bg);
             border-top: 1px solid var(--gz-rule);
-            padding: 0.75rem 1rem;
-            margin: 1rem -0.5rem 0;
-            z-index: 200;
-            box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.10);
+            padding: 0.5rem 0;
+            margin-top: 1rem;
+            margin-left: calc(-1 * (100vw - 100%) / 2);
+            margin-right: calc(-1 * (100vw - 100%) / 2);
+            padding-left: calc((100vw - 100%) / 2);
+            padding-right: calc((100vw - 100%) / 2);
+            z-index: 100;
+            box-shadow: 0 -4px 8px -6px rgba(28, 26, 23, 0.18);
+        }
+        .att-save-bar small {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--gz-muted);
+        }
+        .att-save-bar .btn {
+            padding: 0.35rem 1.1rem;
+            font-size: 0.75rem;
+            min-height: 2.1rem;
         }
         @media print { .att-save-bar { display: none !important; } }
+
+        /* ===== PAGINATION (Bootstrap 5) — restyled to gazette theme ===== */
+        .pagination {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            margin-bottom: 0;
+            gap: 0;
+        }
+        .pagination .page-link {
+            border: 1px solid var(--gz-rule);
+            border-radius: 0 !important;
+            background: var(--gz-surface);
+            color: var(--gz-ink);
+            padding: 0.35rem 0.8rem;
+            margin-left: -1px;
+            min-width: 2.1rem;
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            box-shadow: none;
+            transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        }
+        .pagination .page-item:first-child .page-link { margin-left: 0; }
+        .pagination .page-link:hover {
+            background: var(--gz-ink);
+            color: var(--gz-surface);
+            border-color: var(--gz-ink);
+            z-index: 2;
+        }
+        .pagination .page-link:focus {
+            box-shadow: 0 0 0 2px var(--gz-rule);
+            outline: none;
+            z-index: 3;
+        }
+        .pagination .page-item.active .page-link {
+            background: var(--gz-accent);
+            border-color: var(--gz-accent);
+            color: #fff;
+            font-weight: 600;
+            z-index: 1;
+        }
+        .pagination .page-item.disabled .page-link {
+            background: var(--gz-surface-2);
+            color: var(--gz-muted);
+            border-color: var(--gz-rule);
+            opacity: 0.6;
+        }
 
         /* ===== PAYROLL INDEX — sticky header + totals footer inside scroll ===== */
         .payroll-scroll {
