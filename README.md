@@ -22,13 +22,23 @@ typography serif và bố cục dòng tiền minh bạch.
 - **Giao diện "Niên Giám"** lấy cảm hứng từ báo in cổ điển: bảng màu cream/burgundy,
   serif EB Garamond, mục lục số La Mã, "dòng tiền tháng" 5 cột trên phiếu lương,
   bảng ledger với dotted rule và double-rule total. Thanh điều hướng **sticky** ở
-  trên cùng khi cuộn, các nút thao tác (xem / sửa / xoá) gọn trên 1 hàng.
+  trên cùng khi cuộn, các nút thao tác (xem / sửa / xoá) gọn trên 1 hàng. Ở các
+  trang nhiều dữ liệu, **nút "Lưu Chấm Công"** trên trang chấm công và **dòng
+  "TỔNG CỘNG"** trên bảng lương được pin sticky ở đáy viewport — khỏi phải cuộn
+  qua mấy chục nhân viên mới tới được nút lưu / tổng cộng.
 - **Xuất PDF** phiếu lương cá nhân &amp; bảng lương cả công ty qua nút *"Xuất PDF"* —
   dùng CSS `@media print` + dialog *Save as PDF* của trình duyệt, không cần cài thêm
-  thư viện. Output giữ nguyên typography và bố cục gazette. Bảng lương tháng có
-  thêm **nút PDF từng dòng** để xuất phiếu lương cho riêng 1 nhân viên (mở
-  `?print=1` → dialog in tự bật). Bảng chấm công cả tháng cũng có nút xuất PDF
-  với layout **A4 landscape** để chứa hết các ô ngày.
+  thư viện. **Phiếu lương cá nhân** in ra theo **format compact 1 trang A4** giống
+  mẫu giấy truyền thống của công ty: header có mã NV, tiêu đề "PHIẾU TÍNH LƯƠNG",
+  bảng "Danh mục / Số ngày / Lương ngày / Số tiền" liệt kê từng khoản (lương ngày,
+  tăng ca, ăn ca, từng phụ cấp riêng dòng…), kèm dòng BHXH chủ SD (21,5%) gạch
+  ngang để tham chiếu, rồi đến block *Trừ tiền* và *Thực lãnh*. Trang phân tích
+  trên web (5 section gazette) chỉ hiện khi xem online, **không xuất hiện trong PDF**.
+  Bảng lương tháng có thêm **nút PDF từng dòng** để xuất phiếu lương cho riêng
+  1 nhân viên (mở `?print=1` → dialog in tự bật). Bảng chấm công cả tháng cũng có
+  nút xuất PDF với layout **A4 landscape**, in **đen trắng kiểu Excel** (xoá màu
+  badge, giữ border rõ ràng, cột Chủ nhật tô xám nhạt) — chứa hết các ô ngày,
+  không giới hạn số trang khi nhiều nhân viên.
 - **Import nhân viên hàng loạt từ Excel** (`.xlsx` / `.xls` / `.csv`) qua nút
   *"Import Excel"* trên Sổ Nhân Viên. Có nút *"Tải file mẫu"* sinh file XLSX
   trống đúng định dạng. Khi phát hiện mã NV trùng, hệ thống hiện **popup so sánh
@@ -77,13 +87,13 @@ typography serif và bố cục dòng tiền minh bạch.
 
 ## Hướng dẫn cài đặt
 
-### Bước 1: Cài PHP 8.2 (nếu XAMPP đang cũ)
+### Bước 1: Cài PHP 8.3+ (nếu XAMPP đang cũ)
 
-Lựa chọn dễ nhất: **tải XAMPP 8.2.x** tại https://www.apachefriends.org/download.html
+Lựa chọn dễ nhất: **tải XAMPP 8.3.x** tại https://www.apachefriends.org/download.html
 
 Sau khi cài, kiểm tra:
 ```bash
-php -v   # phải in: PHP 8.2.x hoặc cao hơn
+php -v   # phải in: PHP 8.3.x hoặc cao hơn
 ```
 
 ### Bước 2: Cài đặt dependencies
@@ -444,13 +454,26 @@ typography, and transparent cash-flow layouts.
   cash-flow strip on each payslip, and ledger tables with dotted rules and
   double-rule totals. The top navigation bar **sticks** on scroll, and row
   actions (view / edit / delete) are laid out as a compact single-row group.
+  On data-heavy pages, the **"Save Attendance"** button on the attendance input
+  page and the **"TỔNG CỘNG" (Grand Total)** row on the payroll list are also
+  pinned sticky to the viewport bottom — no need to scroll past dozens of
+  employees just to reach the save button or see the totals.
 - **PDF export** for individual payslips and the company-wide monthly payroll via
   a *"Xuất PDF"* button — implemented with CSS `@media print` and the browser's
-  *Save as PDF* dialog, no extra library required. Output preserves the gazette
-  typography and layout. The payroll list also has a **per-row PDF icon** that
-  opens the payslip with `?print=1` and auto-triggers the print dialog. The
-  monthly attendance grid has its own PDF button using **A4 landscape** layout
-  so every day-cell fits on one page.
+  *Save as PDF* dialog, no extra library required. The **individual payslip**
+  prints as a **compact single-page A4** matching the traditional company form:
+  header with employee code, "PHIẾU TÍNH LƯƠNG" title, a single
+  "Danh mục / Số ngày / Lương ngày / Số tiền" table listing every component
+  (daily wage, overtime, meal, each allowance on its own line…), a strike-through
+  row for the employer-side BHXH (21.5%) for reference, followed by the
+  *Trừ tiền* (deductions) block and the final *Thực lãnh* (net pay) total. The
+  rich on-screen analytical view (5 gazette sections) is hidden from the PDF.
+  The payroll list also has a **per-row PDF icon** that opens the payslip with
+  `?print=1` and auto-triggers the print dialog. The monthly attendance grid
+  has its own PDF button using **A4 landscape** layout printed in **black &amp;
+  white Excel style** (all badge colors stripped, clean borders, Sundays in
+  light gray) — fits every day cell, no page limit when there are many
+  employees.
 - **Bulk employee import from Excel** (`.xlsx` / `.xls` / `.csv`) via the
   *"Import Excel"* button on the employee list, with a *"Download Template"*
   button that produces a properly-formatted blank XLSX. When duplicate employee
@@ -507,13 +530,13 @@ typography, and transparent cash-flow layouts.
 
 ## Installation Guide
 
-### Step 1: Install PHP 8.2 (if your XAMPP is outdated)
+### Step 1: Install PHP 8.3+ (if your XAMPP is outdated)
 
-Easiest option: **download XAMPP 8.2.x** from https://www.apachefriends.org/download.html
+Easiest option: **download XAMPP 8.3.x** from https://www.apachefriends.org/download.html
 
 After installation, verify:
 ```bash
-php -v   # must print: PHP 8.2.x or higher
+php -v   # must print: PHP 8.3.x or higher
 ```
 
 ### Step 2: Install dependencies
