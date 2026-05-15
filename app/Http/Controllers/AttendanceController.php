@@ -42,12 +42,14 @@ class AttendanceController extends Controller
             'rows' => ['array'],
         ]);
 
-        // Normalize to a Carbon date so Eloquent's `date` cast formats the
-        // lookup value the SAME way it formats the stored value (Y-m-d H:i:s).
-        // Passing a plain 'Y-m-d' string to updateOrCreate would miss existing
-        // rows (stored as '2026-05-15 00:00:00') and trigger a unique-constraint
-        // violation when the INSERT path tries to re-create them.
         $date = Carbon::parse($data['date'])->startOfDay();
+        // Use a plain 'Y-m-d H:i:s' STRING for the updateOrCreate lookup.
+        // Passing a Carbon to where() serializes to ISO 8601 UTC (e.g.
+        // '2026-05-14T17:00:00.000000Z' in +07:00 timezones), which doesn't
+        // match the stored local-time format ('2026-05-15 00:00:00'). The WHERE
+        // then misses, INSERT runs, and the unique (employee_id, work_date)
+        // constraint blows up with a 500.
+        $dateStr = $date->format('Y-m-d H:i:s');
         $rows = $request->input('rows', []);
 
         foreach ($rows as $employeeId => $row) {
@@ -61,13 +63,13 @@ class AttendanceController extends Controller
             }
 
             Attendance::updateOrCreate(
-                ['employee_id' => $employeeId, 'work_date' => $date],
+                ['employee_id' => $employeeId, 'work_date' => $dateStr],
                 ['type' => $type]
             );
 
             if ($shifts > 0) {
                 Overtime::updateOrCreate(
-                    ['employee_id' => $employeeId, 'work_date' => $date],
+                    ['employee_id' => $employeeId, 'work_date' => $dateStr],
                     ['shifts' => $shifts]
                 );
             } else {
