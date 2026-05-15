@@ -1275,6 +1275,26 @@
 
         return { toast, fetchJson, submitForm, ajaxDelete, softReload };
     })();
+
+    // ===== Preserve Bootstrap nav-tab state across soft-reloads =====
+    // softReload() swaps <main>, so the server-rendered default (first tab)
+    // wins unless we remember which tab the user was on.
+    (function () {
+        let activeTabSel = document.querySelector('.nav-tabs .nav-link.active')?.dataset.bsTarget || null;
+
+        document.addEventListener('shown.bs.tab', (e) => {
+            const target = e.target?.dataset?.bsTarget;
+            if (target) activeTabSel = target;
+        });
+
+        document.addEventListener('gz:soft-reloaded', () => {
+            if (!activeTabSel || typeof bootstrap === 'undefined') return;
+            const trigger = document.querySelector(`.nav-tabs .nav-link[data-bs-target="${activeTabSel}"]`);
+            if (trigger && !trigger.classList.contains('active')) {
+                bootstrap.Tab.getOrCreateInstance(trigger).show();
+            }
+        });
+    })();
 </script>
 @stack('scripts')
 </body>
