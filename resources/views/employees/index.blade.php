@@ -81,8 +81,15 @@
                                 <tr><td><code>luong_bhxh</code></td><td>—</td><td>VND</td></tr>
                                 <tr><td><code>chuyen_can</code></td><td>—</td><td>VND</td></tr>
                                 <tr><td><code>trang_thai</code></td><td>—</td><td>{{ __('1 = Đang làm, 0 = Nghỉ') }}</td></tr>
+                                <tr><td><code>luong_san_pham</code></td><td>—</td><td>{{ __('VND. Ghi vào tháng hiện tại; chỉnh sau trên Phiếu Lương.') }}</td></tr>
+                                <tr><td><code>ten_phu_cap</code></td><td>—</td><td>{{ __('VD: Phụ cấp xăng xe. Bắt buộc nếu có 1 trong 2 cột bên dưới > 0.') }}</td></tr>
+                                <tr><td><code>phu_cap_chiu_thue</code></td><td>—</td><td>{{ __('VND. Cộng vào TN tính thuế TNCN.') }}</td></tr>
+                                <tr><td><code>phu_cap_khong_chiu_thue</code></td><td>—</td><td>{{ __('VND. Không cộng thuế.') }}</td></tr>
                             </tbody>
                         </table>
+                        <p class="mt-2 mb-0 small text-muted">
+                            <em>{{ __('4 cột cuối là dữ liệu tháng — ghi vào tháng/năm hiện tại lúc import. Có thể bỏ trống.') }}</em>
+                        </p>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid var(--gz-rule);">

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Exports\EmployeesTemplateExport;
 use App\Imports\EmployeesImport;
+use App\Models\Allowance;
 use App\Models\Employee;
+use App\Models\ProductSalary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -98,6 +100,7 @@ class EmployeeController extends Controller
         if (empty($import->duplicateCodes)) {
             return $this->applyImport(
                 rows: $import->parsedRows,
+                extras: $import->parsedExtras,
                 duplicateCodes: [],
                 action: 'skip',
                 rowErrors: $import->errors,
@@ -108,6 +111,7 @@ class EmployeeController extends Controller
         $key = 'import:employees:' . Str::uuid();
         Cache::put($key, [
             'rows' => $import->parsedRows,
+            'extras' => $import->parsedExtras,
             'duplicates' => $import->duplicateCodes,
             'new' => $import->newCodes,
             'errors' => $import->errors,
@@ -152,32 +156,46 @@ class EmployeeController extends Controller
 
         return $this->applyImport(
             rows: $cached['rows'] ?? [],
+            extras: $cached['extras'] ?? [],
             duplicateCodes: $cached['duplicates'] ?? [],
             action: $data['action'],
             rowErrors: $cached['errors'] ?? [],
         );
     }
 
-    private function applyImport(array $rows, array $duplicateCodes, string $action, array $rowErrors = [])
+    private function applyImport(array $rows, array $extras, array $duplicateCodes, string $action, array $rowErrors = [])
     {
         $created = 0;
         $updated = 0;
         $skipped = 0;
+        $extrasApplied = 0;
         $duplicateSet = array_flip($duplicateCodes);
+        $now = now();
+        $year = (int) $now->year;
+        $month = (int) $now->month;
 
         foreach ($rows as $code => $payload) {
             $isDuplicate = isset($duplicateSet[$code]);
             try {
+                $employee = null;
                 if ($isDuplicate) {
                     if ($action === 'skip') {
                         $skipped++;
                         continue;
                     }
                     Employee::where('employee_code', $code)->update($payload);
+                    $employee = Employee::where('employee_code', $code)->first();
                     $updated++;
                 } else {
-                    Employee::create(['employee_code' => $code] + $payload);
+                    $employee = Employee::create(['employee_code' => $code] + $payload);
                     $created++;
+                }
+
+                // Apply monthly extras (product salary + allowance) for current year/month
+                if ($employee && !empty($extras[$code])) {
+                    if ($this->applyMonthlyExtras($employee, $extras[$code], $year, $month)) {
+                        $extrasApplied++;
+                    }
                 }
             } catch (\Throwable $e) {
                 $rowErrors[] = "Mã {$code}: {$e->getMessage()}";
@@ -185,11 +203,57 @@ class EmployeeController extends Controller
         }
 
         $msg = "Đã import: tạo mới {$created}, cập nhật {$updated}, giữ nguyên {$skipped}.";
+        if ($extrasApplied > 0) {
+            $msg .= " Đã ghi lương SP/phụ cấp tháng {$month}/{$year} cho {$extrasApplied} NV.";
+        }
         $redirect = redirect()->route('employees.index')->with('success', $msg);
         if (!empty($rowErrors)) {
             $redirect->with('import_errors', $rowErrors);
         }
         return $redirect;
+    }
+
+    /**
+     * Ghi/cập nhật lương sản phẩm + phụ cấp cho employee theo tháng/năm hiện tại.
+     * Trả về true nếu có ít nhất 1 record được tạo/cập nhật.
+     */
+    private function applyMonthlyExtras(Employee $employee, array $extras, int $year, int $month): bool
+    {
+        $touched = false;
+
+        if (!empty($extras['product_salary'])) {
+            ProductSalary::updateOrCreate(
+                ['employee_id' => $employee->id, 'year' => $year, 'month' => $month],
+                ['amount' => (float) $extras['product_salary'], 'note' => 'Import từ Excel']
+            );
+            $touched = true;
+        }
+
+        $name = $extras['allowance_name'] ?? null;
+        if ($name) {
+            if (!empty($extras['allowance_taxable'])) {
+                Allowance::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id, 'year' => $year, 'month' => $month,
+                        'name' => $name, 'type' => Allowance::TYPE_TAXABLE,
+                    ],
+                    ['amount' => (float) $extras['allowance_taxable']]
+                );
+                $touched = true;
+            }
+            if (!empty($extras['allowance_non_taxable'])) {
+                Allowance::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id, 'year' => $year, 'month' => $month,
+                        'name' => $name, 'type' => Allowance::TYPE_NON_TAXABLE,
+                    ],
+                    ['amount' => (float) $extras['allowance_non_taxable']]
+                );
+                $touched = true;
+            }
+        }
+
+        return $touched;
     }
 
     private function validateData(Request $request, ?int $id = null): array

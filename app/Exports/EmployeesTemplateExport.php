@@ -31,6 +31,10 @@ class EmployeesTemplateExport implements FromArray, WithHeadings, WithEvents, Wi
             'luong_bhxh',
             'chuyen_can',
             'trang_thai',
+            'luong_san_pham',
+            'ten_phu_cap',
+            'phu_cap_chiu_thue',
+            'phu_cap_khong_chiu_thue',
         ];
     }
 
@@ -38,8 +42,8 @@ class EmployeesTemplateExport implements FromArray, WithHeadings, WithEvents, Wi
     {
         // 2 dòng ví dụ để người dùng tham khảo định dạng
         return [
-            ['NV101', 'Nguyễn Văn Mẫu',   'Công nhân SX', 'Sản xuất',  '2026-01-15', 1, 8500000,  8500000,  300000, 1],
-            ['NV102', 'Trần Thị Ví Dụ',   'Tổ trưởng',    'Sản xuất',  '2025-09-01', 2, 14000000, 14000000, 500000, 1],
+            ['NV101', 'Nguyễn Văn Mẫu', 'Công nhân SX', 'Sản xuất', '2026-01-15', 1, 8500000,  8500000,  300000, 1, 1500000, 'Phụ cấp xăng xe', 0,      500000],
+            ['NV102', 'Trần Thị Ví Dụ', 'Tổ trưởng',    'Sản xuất', '2025-09-01', 2, 14000000, 14000000, 500000, 1, 0,       'Phụ cấp ăn trưa', 730000, 0],
         ];
     }
 
@@ -48,7 +52,7 @@ class EmployeesTemplateExport implements FromArray, WithHeadings, WithEvents, Wi
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $lastCol = 'J';
+                $lastCol = 'N';
                 $headerRange = "A1:{$lastCol}1";
 
                 // Style header
@@ -82,6 +86,9 @@ class EmployeesTemplateExport implements FromArray, WithHeadings, WithEvents, Wi
                     'so_nguoi_phu_thuoc: số nguyên (0, 1, 2...).',
                     'luong_can_ban, luong_bhxh, chuyen_can: số (VND), không cần dấu phẩy.',
                     'trang_thai: 1 = Đang làm, 0 = Nghỉ.',
+                    'luong_san_pham: VND. Ghi vào tháng/năm hiện tại lúc import; để 0 nếu không có. Có thể chỉnh sau trong Phiếu Lương.',
+                    'ten_phu_cap: tên phụ cấp (VD: "Phụ cấp xăng xe"). Bắt buộc nếu có cột phu_cap_chiu_thue hoặc phu_cap_khong_chiu_thue > 0.',
+                    'phu_cap_chiu_thue / phu_cap_khong_chiu_thue: VND. Cộng vào tổng thu nhập tháng; cột "chịu thuế" sẽ vào TN tính thuế TNCN.',
                     'Có thể xoá 2 dòng ví dụ trước khi import.',
                 ];
                 foreach ($help as $i => $line) {

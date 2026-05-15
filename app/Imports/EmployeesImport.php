@@ -12,7 +12,8 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 /**
  * Parse-only: chỉ đọc file Excel và phân loại
- *   - parsedRows: ['NV001' => payload, 'NV002' => payload, ...]
+ *   - parsedRows: ['NV001' => employee payload, 'NV002' => ...]
+ *   - parsedExtras: ['NV001' => monthly extras (product_salary + allowance)]
  *   - duplicateCodes: mã đã tồn tại trong DB
  *   - newCodes: mã sẽ tạo mới
  *   - errors: thông báo lỗi từng dòng
@@ -22,8 +23,11 @@ class EmployeesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
 {
     use Importable;
 
-    /** @var array<string, array> mã NV → payload chuẩn hoá */
+    /** @var array<string, array> mã NV → employee payload (cho bảng employees) */
     public array $parsedRows = [];
+
+    /** @var array<string, array> mã NV → monthly extras (product_salary + allowance) */
+    public array $parsedExtras = [];
 
     /** @var string[] mã NV đã có sẵn trong DB */
     public array $duplicateCodes = [];
@@ -45,6 +49,12 @@ class EmployeesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         'luong_can_ban' => 'basic_salary', 'basic_salary' => 'basic_salary',
         'luong_bhxh' => 'bhxh_salary', 'muc_bhxh' => 'bhxh_salary', 'bhxh_salary' => 'bhxh_salary',
         'chuyen_can' => 'diligence_bonus', 'tien_chuyen_can' => 'diligence_bonus', 'diligence_bonus' => 'diligence_bonus',
+
+        // Monthly extras — gắn vào tháng/năm hiện tại lúc import
+        'luong_san_pham' => 'product_salary', 'lsp' => 'product_salary', 'product_salary' => 'product_salary',
+        'ten_phu_cap' => 'allowance_name', 'phu_cap' => 'allowance_name', 'allowance_name' => 'allowance_name',
+        'phu_cap_chiu_thue' => 'allowance_taxable', 'pcct' => 'allowance_taxable', 'allowance_taxable' => 'allowance_taxable',
+        'phu_cap_khong_chiu_thue' => 'allowance_non_taxable', 'pckct' => 'allowance_non_taxable', 'allowance_non_taxable' => 'allowance_non_taxable',
     ];
 
     public function collection(Collection $rows): void
@@ -65,6 +75,10 @@ class EmployeesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             }
 
             $this->parsedRows[$code] = $this->preparePayload($data);
+            $extras = $this->prepareExtras($data);
+            if (!empty($extras)) {
+                $this->parsedExtras[$code] = $extras;
+            }
         }
 
         if (!empty($this->parsedRows)) {
@@ -121,6 +135,35 @@ class EmployeesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         }
 
         return array_filter($payload, fn ($v) => $v !== null);
+    }
+
+    /**
+     * Tách các trường liên quan tới dữ liệu tháng (lương SP + phụ cấp).
+     * Trả về mảng rỗng nếu không có gì cần xử lý.
+     */
+    private function prepareExtras(array $data): array
+    {
+        $extras = [];
+
+        $productSalary = $this->toNumber($data['product_salary'] ?? 0);
+        if ($productSalary > 0) {
+            $extras['product_salary'] = $productSalary;
+        }
+
+        $allowanceName = isset($data['allowance_name']) ? trim((string) $data['allowance_name']) : '';
+        $taxable = $this->toNumber($data['allowance_taxable'] ?? 0);
+        $nonTaxable = $this->toNumber($data['allowance_non_taxable'] ?? 0);
+        if ($allowanceName !== '' && ($taxable > 0 || $nonTaxable > 0)) {
+            $extras['allowance_name'] = $allowanceName;
+            if ($taxable > 0) {
+                $extras['allowance_taxable'] = $taxable;
+            }
+            if ($nonTaxable > 0) {
+                $extras['allowance_non_taxable'] = $nonTaxable;
+            }
+        }
+
+        return $extras;
     }
 
     private function toNumber(mixed $v): float
