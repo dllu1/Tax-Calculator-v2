@@ -1,0 +1,286 @@
+================================================================================
+NATIVEPHP BUG REPORT — `native:serve` fails before Electron window opens
+================================================================================
+
+Project: Niên Giám Lương (tax-calculator) — Laravel 12 PIT/payroll app
+Date observed: 2026-05-15
+Reporter: Phase 2 desktop conversion attempt
+Status: BLOCKED — Electron main process crashes during dev mode startup
+
+--------------------------------------------------------------------------------
+TÓM TẮT (Tiếng Việt)
+--------------------------------------------------------------------------------
+
+Khi chạy `php artisan native:serve` để khởi động dev mode của NativePHP, Electron
+build thành công bundle main/preload, nhưng khi spawn process chính (`start
+electron app...`), Node bị crash ngay với:
+
+    TypeError: Cannot read properties of undefined (reading 'exports')
+        at cjsPreparseModuleExports (node:internal/modules/esm/translators)
+
+Lỗi này xảy ra trong cơ chế ESM↔CJS bridging của Node và không liên quan đến
+code Laravel của app. Đã thử các kết hợp:
+
+  - Electron 31 / 32 / 33 / 34 / 35
+  - electron-vite 4.0.1 / 5.0.0
+  - Vite main format: cjs / es
+  - Output extension: .js / .cjs / .mjs
+  - package.json "type": "module" / không có
+  - Bundled Node 20.18 / 20.19 / 22.16
+
+KHÔNG combo nào vượt qua được khâu khởi động Electron. Lỗi phát sinh tại
+upstream (Node ESM translator), không có workaround từ phía cấu hình
+NativePHP/electron-vite mà tôi tìm được.
+
+Tạm dừng phase 2 (đóng gói thành Windows desktop app). Hồ sơ này để gửi lên
+NativePHP để dev fix upstream.
+
+--------------------------------------------------------------------------------
+ENVIRONMENT
+--------------------------------------------------------------------------------
+
+  OS:           Windows 11 Home Single Language 10.0.26200 (x64)
+  Shell:        Git Bash (MINGW64) + PowerShell
+  PHP host:     8.5.6 (NTS Visual C++ 2022 x64) — installed at C:\xampp\php
+  Composer:     2.2.28
+  Node:         24.15.0 (host)
+  npm:          11.12.1
+  XAMPP:        installed at C:\xampp (MySQL 5.7 for normal dev)
+
+  Laravel:      12.59.0 (downgraded from 13.9.0 to satisfy
+                nativephp/electron requirement of illuminate ^10|^11|^12)
+  nativephp/electron:    1.3.0
+  nativephp/laravel:     1.3.1
+  nativephp/php-bin:     1.1.1 (only ships PHP 8.3/8.4 zips;
+                                we manually duplicated php-8.4.zip to php-8.5.zip
+                                because ExecuteCommand.php hardcodes
+                                NATIVEPHP_PHP_BINARY_VERSION to host PHP_MAJOR.MINOR)
+
+--------------------------------------------------------------------------------
+REPRODUCTION STEPS
+--------------------------------------------------------------------------------
+
+  1. Fresh Laravel 12 app on Windows + PHP 8.3+
+  2. composer require nativephp/electron
+  3. php artisan native:install --no-interaction --installer=npm
+  4. cp vendor/nativephp/php-bin/bin/win/x64/php-8.4.zip \
+        vendor/nativephp/php-bin/bin/win/x64/php-8.<host-minor>.zip
+     (only needed if host PHP is newer than what php-bin ships)
+  5. Set DB_CONNECTION=sqlite in .env (we tested with SQLite; same error with MySQL)
+  6. php artisan migrate --force
+  7. php artisan native:serve -vvv
+
+Expected: Electron window opens with the Laravel app's homepage.
+Actual:   Electron main process crashes before any window is created.
+
+--------------------------------------------------------------------------------
+FULL ERROR (from native:serve -vvv output)
+--------------------------------------------------------------------------------
+
+The PHP binary is correctly unzipped:
+
+    Binary Source:  C:\xampp\htdocs\tax-calculator\vendor\nativephp\php-bin\bin\win\x64\php-8.5.zip
+    Binary Filename:  php.exe
+    PHP version: 8.5
+    Unzipping PHP binary from ... php-8.5.zip to ... resources/php
+    Copied PHP binary to ... php.exe
+
+electron-vite build succeeds:
+
+    vite v7.1.4 building SSR bundle for development...
+    [renderer config is missing]
+    33 modules transformed.
+    rendering chunks...
+    out/main/index.js  72.76 kB
+    built in 258ms.
+    electron main process built successfully
+
+    vite v7.1.4 building SSR bundle for development...
+    1 modules transformed.
+    out/preload/index.mjs  0.17 kB
+    built in 8ms.
+    electron preload scripts built successfully
+
+Then "starting electron app..." crashes immediately:
+
+    node:internal/modules/esm/translators:379
+        return { module, exportNames: new SafeSet(['default', ...Object.keys(module.exports)]) };
+                                                                                    ^
+
+    TypeError: Cannot read properties of undefined (reading 'exports')
+        at cjsPreparseModuleExports (node:internal/modules/esm/translators:379:81)
+        at createCJSModuleWrap (node:internal/modules/esm/translators:273:35)
+        at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:333:10)
+        at callTranslator (node:internal/modules/esm/loader:428:14)
+        at ModuleLoader.moduleProvider (node:internal/modules/esm/loader:434:30)
+        at async link (node:internal/modules/esm/module_job:87:21)
+
+    Node.js v20.18.1   ← (Electron's bundled Node, not host Node)
+
+Exit code: typically 0 because the parent php-artisan process exits cleanly
+after spawning the npm script that itself crashes. The child electron
+process terminates with non-zero but the artisan command doesn't surface it.
+
+--------------------------------------------------------------------------------
+HYPOTHESIS — root cause
+--------------------------------------------------------------------------------
+
+The error originates inside Node's ESM module loader, specifically the
+`cjsPreparseModuleExports()` function which is the bridge that lets ESM
+code `import` from CJS modules.
+
+The bundle written at `out/main/index.js` by electron-vite is in CJS form
+(uses `require()` and `module.exports`), but `package.json` declares
+`"type": "module"`. Therefore Node tries to load `out/main/index.js` as ESM
+and falls into the CJS-compatibility translator, which then crashes because
+`module` is undefined in the ESM evaluation context.
+
+This appears related to the upstream Node issue cluster:
+  https://github.com/nodejs/node/issues/55228  (and similar in 20.x/22.x lines)
+
+The reason changing `electron`/`electron-vite`/Node versions did not help:
+
+  - Removing `"type": "module"` made `out/main/index.js` load as CJS, but
+    then `require('electron-store')` (ESM-only, v10) errors with ERR_REQUIRE_ESM.
+  - Forcing vite `format: 'es'` + renaming `out/main/index.js` -> `index.mjs`
+    still hit the same TypeError, because rollup with externalizeDepsPlugin
+    still emits CJS-compatible interop wrappers for external requires.
+  - Renaming to `index.cjs` with no `type: module` resulted in
+    ERR_UNSUPPORTED_ESM_URL_SCHEME on `import 'electron'` (Electron 31
+    doesn't accept the electron: URL scheme in sync require from CJS).
+
+The skeleton appears to be in an inconsistent state where the .js source
+files at `src/main/*` use ESM syntax (`import` statements) but the rollup
+output is CJS, and the runtime container (Electron's Node) cannot reconcile
+these via its CJS<->ESM bridge in the bundled Node versions.
+
+--------------------------------------------------------------------------------
+WHAT WAS TRIED (negative results)
+--------------------------------------------------------------------------------
+
+   #  electron    electron-vite   package.json    vite output       result
+  ---+-----------+---------------+---------------+------------------+----------------
+   1  32.2.7      4.0.1           type:module    index.js (cjs)    TypeError (Node 20.18)
+   2  33.x        4.0.1           type:module    index.js (cjs)    TypeError (Node 20.18)
+   3  34.x        4.0.1           type:module    index.js (cjs)    TypeError (Node 20.19)
+   4  35.x        4.0.1           type:module    index.js (cjs)    TypeError (Node 22.16)
+   5  34.x        5.0.0           type:module    index.js (cjs)    TypeError (Node 20.19)
+   6  34.x        5.0.0           (no type)      index.js (cjs)    ERR_UNSUPPORTED_ESM_URL_SCHEME 'electron:'
+   7  31.x        4.0.1           type:module    index.js (cjs)    ERR_REQUIRE_ESM electron-store
+   8  32.2.7      4.0.1           type:module    index.mjs (cjs)   TypeError (Node 20.18)
+   9  32.2.7      4.0.1           type:module    index.cjs/cjs     ERR_UNSUPPORTED_ESM_URL_SCHEME 'electron:'
+
+Patches we applied (and reverted to defaults at the end):
+
+  - vendor/nativephp/electron/resources/js/electron.vite.config.mjs
+  - vendor/nativephp/electron/resources/js/package.json
+  - Several npm install commands to bump electron/electron-vite versions
+
+These vendor patches did NOT resolve the issue and are reverted in the
+shipped state. The npm-installed Electron version may differ from the
+declared ^32.2.7 if `npm install` was run in `resources/js` with a higher
+explicit version; rerun `npm install` to reset.
+
+--------------------------------------------------------------------------------
+RELEVANT CONFIG STATE (after revert)
+--------------------------------------------------------------------------------
+
+vendor/nativephp/electron/resources/js/package.json (unchanged from publish):
+
+    {
+        "name": "tax-calculator-dev",
+        "main": "./out/main/index.js",
+        "type": "module",
+        "engines": { "node": ">=22.0.0" },
+        ...
+        "devDependencies": {
+            "electron": "^32.2.7",
+            "electron-vite": "^4.0.1",
+            "vite": "^7.0.5",
+            ...
+        }
+    }
+
+vendor/nativephp/electron/resources/js/electron.vite.config.mjs (unchanged):
+
+    import { join } from 'path';
+    import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+
+    export default defineConfig({
+        main: {
+            build: {
+                rollupOptions: {
+                    plugins: [ /* watch-external for ServiceProvider */ ]
+                },
+            },
+            plugins: [externalizeDepsPlugin()]
+        },
+        preload: { plugins: [externalizeDepsPlugin()] }
+    });
+
+app/Providers/NativeAppServiceProvider.php:
+
+    public function boot(): void
+    {
+        Window::open()
+            ->title(config('app.name'))
+            ->width(1280)->height(820)
+            ->minWidth(1024)->minHeight(640)
+            ->rememberState();
+    }
+
+config/nativephp.php — defaults, with NATIVEPHP_UPDATER_ENABLED=false in .env
+(so the updater is not blocking startup).
+
+--------------------------------------------------------------------------------
+QUESTIONS FOR NATIVEPHP MAINTAINERS
+--------------------------------------------------------------------------------
+
+1. Is `native:serve` known to work on Windows + PHP 8.3+ + current Electron
+   and Node versions? If yes, what specific versions of node/electron/
+   electron-vite are confirmed working?
+
+2. Should `out/main/index.js` be emitted as ESM (matching package.json
+   `type: module`) and Electron be configured to consume ESM entrypoints?
+
+3. There is a manual workaround needed today for PHP 8.5 hosts:
+   php-bin's hardcoded version lookup (in
+   vendor/nativephp/electron/src/Traits/ExecuteCommand.php) sets
+   NATIVEPHP_PHP_BINARY_VERSION to host's PHP_MAJOR.MINOR with no override
+   knob. Suggest accepting env('NATIVEPHP_PHP_BINARY_VERSION', ...) so users
+   can pin to a php-bin-available version (currently 8.3 / 8.4).
+
+4. Is there a recommended workaround until upstream Node ESM bridge stabilizes,
+   e.g. pinning Electron to a specific 30.x / 28.x where bundled Node was
+   not affected?
+
+--------------------------------------------------------------------------------
+PROJECT-SIDE STATE (kept after pause)
+--------------------------------------------------------------------------------
+
+These changes were made and are kept (working, not part of the bug):
+
+  - composer.json: laravel/framework ^12.0, laravel/tinker ^2.9
+    (downgraded from L13 because NativePHP doesn't yet support L13)
+  - composer.json: + nativephp/electron ^1.3
+  - app/Providers/NativeAppServiceProvider.php (window config)
+  - config/nativephp.php (published config)
+  - .env / .env.example: added NATIVEPHP_* and NATIVEPHP_UPDATER_ENABLED=false
+  - .env.nativephp: helper file with SQLite-based config for later use
+  - dev-native.bat: helper that swaps .env → .env.nativephp before
+    running `php artisan native:serve`, restores on exit
+  - database/migrations/2026_05_14_000009_*.php: made driver-aware so SQLite
+    no longer chokes on `ALTER TABLE ... MODIFY ENUM(...)` (MySQL-specific).
+  - vendor/nativephp/php-bin/bin/win/x64/php-8.5.zip: copied from php-8.4.zip
+    to satisfy hardcoded version lookup on PHP 8.5 hosts.
+  - Backups: composer.json.bak, composer.lock.bak — pre-downgrade snapshots
+    in case full rollback is desired later.
+
+These are SAFE to keep: they do not break the existing web mode
+(`start.bat` workflow with MySQL via XAMPP). Verified that the existing
+auth gate + payroll features still function under Laravel 12 + MySQL after
+all these changes.
+
+--------------------------------------------------------------------------------
+END OF REPORT
+--------------------------------------------------------------------------------

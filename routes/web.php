@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
@@ -8,6 +9,17 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('auth')->name('auth.')->group(function () {
+    Route::get('/setup',    [AuthController::class, 'showSetup'])->name('setup');
+    Route::post('/setup',   [AuthController::class, 'storeSetup'])->name('setup.store');
+    Route::get('/recovery', [AuthController::class, 'showRecoveryDisplay'])->name('recovery-display');
+    Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login',   [AuthController::class, 'login'])->name('login.store');
+    Route::post('/logout',  [AuthController::class, 'logout'])->name('logout');
+    Route::get('/forgot',   [AuthController::class, 'showForgot'])->name('forgot');
+    Route::post('/forgot',  [AuthController::class, 'resetPassword'])->name('forgot.store');
+});
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/search', [HomeController::class, 'search'])->name('home.search');

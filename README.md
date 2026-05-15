@@ -58,12 +58,22 @@ typography serif và bố cục dòng tiền minh bạch.
   hướng. Trang phiếu lương dùng kỹ thuật **soft-reload** (fetch lại HTML, thay
   `<main>`) để cập nhật totals mà không nháy trang. Xoá nhân viên xoá dòng
   table tại chỗ. Nhờ vậy thao tác trên trang dữ liệu tháng mượt như SPA.
+- **Cổng đăng nhập một mật khẩu** — toàn bộ trang dữ liệu được bảo vệ bằng
+  middleware `RequirePassword`. Lần đầu mở app, hệ thống yêu cầu **tạo mật khẩu**
+  và sinh **mã khôi phục dạng `XXXX-XXXX-XXXX-XXXX`** (hiển thị **duy nhất một
+  lần** — phải lưu ngay). Phiên đăng nhập **hết hạn khi đóng trình duyệt/app**
+  (`SESSION_EXPIRE_ON_CLOSE=true`), tắt-bật là phải nhập lại. Quên mật khẩu thì
+  nhập mã khôi phục ở `/auth/forgot` để đặt lại — đặt xong sẽ sinh **mã khôi phục
+  mới** (mã cũ vô hiệu hoá). Mật khẩu lưu **bcrypt hash** trong bảng `settings`,
+  không cần thêm migration. Có **rate-limit** 5 lần/phút cho login & 3 lần/5 phút
+  cho recovery. Nút **Đăng xuất** nằm cạnh nút đổi theme ở masthead.
 
 ## Yêu cầu hệ thống
 
-- **PHP ≥ 8.2** (Laravel 11 yêu cầu)
-- **MySQL ≥ 5.7** (XAMPP / MariaDB đều OK)
-- **Composer ≥ 2.5**
+- **PHP ≥ 8.3** (Laravel 12 yêu cầu)
+- **MySQL ≥ 5.7** (XAMPP / MariaDB đều OK) — cho chế độ web
+- **Composer ≥ 2.2**
+- **Node.js ≥ 22 + npm** — chỉ cần nếu build/dev với NativePHP (desktop app)
 
 ## Hướng dẫn cài đặt
 
@@ -115,8 +125,22 @@ php artisan migrate --seed
 
 Lệnh này sẽ:
 - Tạo 8 bảng: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
-- Tạo 5 nhân viên mẫu (NV001 - NV005) kèm dữ liệu chấm công 20 ngày
+- Sinh **10 nhân viên mẫu** (NV001 – NV010) với vai trò đa dạng: công nhân, tổ
+  trưởng, quản đốc, kế toán, nhân sự, QA, phó GĐ, GĐ
+- Chấm công **2 tháng** (tháng trước trọn vẹn + tháng hiện tại tới ngày hôm
+  nay): đầy đủ 5 trạng thái (`normal`, `sunday`, `half`, `leave`, `absent`).
+  NV007 cố tình có ngày `absent` để minh hoạ tiền chuyên cần bị mất; nhiều NV
+  có ngày `half` để xem tiền nửa ngày được trả thế nào.
+- Tăng ca cho công nhân & tổ trưởng (2 ca/5 ngày, 1 ca/3 ngày)
+- Lương sản phẩm cho production workers (~20-25% lương căn bản)
+- Phụ cấp đa dạng theo vai trò: trách nhiệm, điện thoại, xăng xe, ăn trưa,
+  độc hại (cả `taxable` & `non_taxable`)
+- Tạm ứng cho một số NV để test trừ lương cuối tháng
 - Tự động seed các tham số mặc định cho bảng `settings` (lần đầu vào `/settings`)
+
+→ Tổng cộng ~450 attendance, ~80 overtime, ~50 allowance, ~10 advance — đủ
+phong phú để thử mọi tính năng (bảng lương cá nhân, bảng lương cả công ty,
+so sánh tháng, xuất PDF, in chấm công…).
 
 ### Bước 6: Chạy server
 
@@ -125,6 +149,16 @@ php artisan serve
 ```
 
 Mở trình duyệt: **http://localhost:8000**
+
+#### Lần đầu mở app
+
+Truy cập `http://localhost:8000` → bị chuyển hướng tới **`/auth/setup`** để
+tạo mật khẩu (tối thiểu 6 ký tự). Sau khi tạo xong, app hiển thị **mã khôi
+phục dạng `XXXX-XXXX-XXXX-XXXX`** — **bấm "Sao chép mã" và lưu lại ngay**
+(vào trình quản lý mật khẩu, ghi chú giấy, hoặc bất kỳ nơi nào an toàn). Mã
+chỉ hiển thị **một lần duy nhất**; rời khỏi trang là không xem lại được. Nếu
+sau này quên mật khẩu, vào `/auth/forgot` nhập mã khôi phục để đặt lại — mỗi
+lần reset sẽ sinh mã mới.
 
 #### Khởi động bằng 1 click (Windows)
 
@@ -145,6 +179,75 @@ Nếu muốn 1 file `.exe` để đặt shortcut ra desktop, dùng tool miễn p
 [**Bat To Exe Converter**](https://www.battoexeconverter.com/) — mở `start.bat`,
 chọn icon (nếu thích), bấm *Convert* sẽ ra `start.exe`. File `.exe` đó chỉ là
 vỏ bọc đóng gói `.bat` nên không cần cài đặt thêm.
+
+## Đóng gói thành Windows Desktop App (NativePHP / Electron)
+
+Phần này biến app thành **một thư mục `.exe` chạy độc lập** — không cần XAMPP,
+không cần MySQL, không cần PHP trên máy người dùng. Dùng [NativePHP for
+Electron](https://nativephp.com/) bundle PHP runtime + SQLite + toàn bộ Laravel
+app vào trong 1 package.
+
+### Yêu cầu thêm
+- **Node.js ≥ 22** & npm (xác minh: `node --version`)
+- Lần build đầu sẽ tải Electron binary ~150MB
+
+### Bước 1: Cài NativePHP (đã có sẵn trong composer.json)
+Sau `composer install`, các script tự chạy: tải `nativephp/electron`, publish
+config, cài npm dependencies trong `vendor/nativephp/electron/resources/js/`,
+và áp một số patch tương thích qua [`scripts/apply-nativephp-patches.php`](tax-calculator/scripts/apply-nativephp-patches.php)
+(downgrade `electron-store@10→8`, `get-port@7→5`, `electron-context-menu@4→3`,
+xóa `type:module`, thêm `portNumbers` shim, sub-`package.json` ESM cho
+`electron-plugin/dist/server/` — cần thiết vì NativePHP 1.3.0 + Node ≥20 có
+bug ESM/CJS bridge).
+
+### Bước 2: Dev mode (mở Electron window từ source)
+```bash
+# Trên Windows, double-click hoặc:
+dev-native.bat
+```
+Script này:
+1. Backup `.env` (MySQL config) sang `.env.bak`
+2. Copy `.env.nativephp` (SQLite + NativePHP metadata) thành `.env`
+3. Tạo `database/database.sqlite` nếu thiếu, chạy migrate + seed
+4. Unset `ELECTRON_RUN_AS_NODE` (env var leak khiến Electron crash)
+5. Chạy `php artisan native:serve` → cửa sổ Electron mở ra, hot-reload PHP
+6. Khi tắt: restore `.env` về MySQL
+
+### Bước 3: Build `.exe` cho production
+```bash
+# .env phải đang ở chế độ SQLite — chạy dev-native.bat một lần để swap
+php artisan native:build win x64
+```
+- Mất 10–30 phút (download Electron binary, đóng gói asar, electron-builder)
+- Kết quả: `dist/win-unpacked/tax-calculator.exe` (~178MB) — sẵn sàng chạy
+- Toàn bộ thư mục `dist/win-unpacked/` (~390MB) có thể copy sang máy khác và
+  chạy ngay, không cài đặt
+- File `.env` bundled là `.env.nativephp` (SQLite). DB sẽ được tạo tự động
+  trong `%APPDATA%\tax-calculator\database\database.sqlite` lần đầu mở
+- App tự động chạy migrate + seed lần đầu (qua `NativeAppServiceProvider`)
+  nên user thấy ngay 10 NV mẫu — có thể test feature mà chưa cần import
+
+#### NSIS installer (`Tax Calculator-1.0.0-setup.exe`)
+Mặc định electron-builder cố tạo installer NSIS nhưng cần extract
+`winCodeSign` (chứa macOS dylib symlinks) — Windows yêu cầu admin/Developer
+Mode để tạo symlink. Hai cách xử lý:
+- **Bật Developer Mode**: Settings → System → For developers → Developer Mode = On
+- **Hoặc chạy Terminal "Run as Administrator"** rồi build — cache extract xong,
+  lần sau chạy thường được
+
+Nếu chỉ cần app chạy được (không quan tâm installer), `dist/win-unpacked/` đã đủ.
+
+### Lưu ý quan trọng
+- **2 môi trường song song**:
+  - `start.bat` → web mode (MySQL/XAMPP/`localhost:8000`) — dùng để dev nhanh
+    với hot reload, debug qua browser DevTools
+  - `dev-native.bat` → desktop mode (SQLite trong Electron window) — dùng để
+    test feature như thật, kiểm tra trước khi build
+- **Không trộn 2 DB**: dữ liệu MySQL và SQLite tách biệt. Khi switch qua
+  `dev-native.bat`, đang dùng SQLite ở `database/database.sqlite`. Lần đầu
+  Electron mở ra sẽ seed lại 10 NV mẫu vào SQLite.
+- **Sau khi `composer update`**: script `apply-nativephp-patches.php` tự chạy
+  qua `post-update-cmd` (đã cấu hình trong composer.json) để re-apply patches.
 
 ## Công thức tính lương & thuế
 
@@ -223,30 +326,38 @@ tax-calculator/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/     HomeController, EmployeeController, AttendanceController, PayrollController,
-│   │   │                    SettingController, HelpController, LocaleController
-│   │   └── Middleware/      SetLocale (đọc ngôn ngữ từ session, áp App::setLocale)
+│   │   │                    SettingController, HelpController, LocaleController, AuthController
+│   │   └── Middleware/      SetLocale (đọc ngôn ngữ từ session)
+│   │                        RequirePassword (gác toàn bộ route, redirect tới /auth/setup hoặc /auth/login)
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
-│   ├── Services/            TaxService, PayrollService, SettingService
+│   ├── Providers/           AppServiceProvider, NativeAppServiceProvider (cấu hình Electron window + auto-seed)
+│   ├── Services/            TaxService, PayrollService, SettingService, AuthGate (hash & verify mật khẩu/recovery)
 │   ├── Imports/             EmployeesImport (parse-only, bucket new/duplicate)
 │   └── Exports/             EmployeesTemplateExport (sinh file mẫu XLSX)
 ├── database/
-│   ├── migrations/          8 file migration
-│   └── seeders/             DatabaseSeeder (5 NV mẫu)
+│   ├── migrations/          9 file migration (driver-aware: chạy được cả MySQL & SQLite)
+│   └── seeders/             DatabaseSeeder (10 NV mẫu × 2 tháng, đủ 5 loại chấm công)
 ├── lang/
 │   ├── vi.json              Bản gốc tiếng Việt
-│   └── en.json              Bản dịch tiếng Anh (~190 key)
+│   └── en.json              Bản dịch tiếng Anh (~220 key)
 ├── resources/views/
-│   ├── layouts/app.blade.php   (gồm masthead + nút VI/EN + nút theme + pre-flight script)
+│   ├── layouts/app.blade.php   (gồm masthead + nút VI/EN + nút theme + nút Đăng xuất + pre-flight script)
+│   ├── auth/                (layout, setup, setup-success, login, forgot — cổng đăng nhập 1 mật khẩu)
 │   ├── home.blade.php
 │   ├── help.blade.php       (trang hướng dẫn 2 cột: TOC sticky + nội dung)
 │   ├── employees/           (gồm modal import + modal so sánh khi trùng mã)
 │   ├── attendance/
 │   ├── payroll/
 │   └── settings/
+├── scripts/
+│   └── apply-nativephp-patches.php   (chạy auto sau composer install/update — patch vendor JS cho NativePHP)
 ├── routes/web.php
-├── start.bat                Khởi động 1-click (Windows)
+├── config/nativephp.php     Cấu hình NativePHP (window, updater, queue workers)
+├── start.bat                Khởi động web mode 1-click (Windows) — MySQL/XAMPP
 ├── stop.bat                 Dừng Laravel server
-└── .env
+├── dev-native.bat           Khởi động desktop mode (Electron + SQLite) — swap .env tự động
+├── .env                     Cấu hình MySQL cho web mode
+└── .env.nativephp           Cấu hình SQLite cho desktop mode (dev-native.bat dùng)
 ```
 
 ## Các URL chính
@@ -265,16 +376,35 @@ tax-calculator/
 | `POST /employees/import` | Upload file Excel (phase 1: phân tích trùng mã) |
 | `POST /employees/import/commit` | Xác nhận giữ/ghi đè sau khi xem popup (phase 2) |
 | `POST /locale/{vi\|en}` | Đổi ngôn ngữ (lưu vào session) |
+| `GET /auth/setup` | Tạo mật khẩu lần đầu (chỉ hiện khi chưa có) |
+| `POST /auth/setup` | Lưu mật khẩu mới + sinh mã khôi phục |
+| `GET /auth/recovery` | Trang hiển thị mã khôi phục một lần duy nhất |
+| `GET /auth/login` | Form đăng nhập 1-mật-khẩu |
+| `POST /auth/login` | Xác thực mật khẩu (rate-limit 5 lần/phút) |
+| `POST /auth/logout` | Đăng xuất, xoá session |
+| `GET /auth/forgot` | Form khôi phục mật khẩu bằng mã |
+| `POST /auth/forgot` | Đặt mật khẩu mới + sinh mã khôi phục mới (rate-limit 3 lần/5 phút) |
 
-## Mã NV mẫu sau seed
+## Mã NV mẫu sau seed (10 nhân viên)
 
-| Mã | Họ tên | Lương căn bản | Chức vụ |
-|---|---|---|---|
-| NV001 | Nguyễn Văn An | 8.000.000 | Công nhân SX |
-| NV002 | Trần Thị Bích | 15.000.000 | Tổ trưởng |
-| NV003 | Lê Quốc Cường | 25.000.000 | Quản đốc |
-| NV004 | Phạm Thu Dung | 12.000.000 | Kế toán |
-| NV005 | Hoàng Minh Đức | 50.000.000 | Giám đốc |
+| Mã | Họ tên | Lương căn bản | Chức vụ | Phòng ban | NPT |
+|---|---|---|---|---|---|
+| NV001 | Nguyễn Văn An       |  8.000.000 | Công nhân SX     | Phân xưởng A | 1 |
+| NV002 | Trần Thị Bích       | 15.000.000 | Tổ trưởng        | Phân xưởng A | 2 |
+| NV003 | Lê Quốc Cường       | 25.000.000 | Quản đốc         | Phân xưởng B | 0 |
+| NV004 | Phạm Thu Dung       | 12.000.000 | Kế toán          | Văn phòng    | 1 |
+| NV005 | Hoàng Minh Đức      | 50.000.000 | Giám đốc         | Ban GĐ       | 2 |
+| NV006 | Vũ Thị Hà           |  9.500.000 | Công nhân SX     | Phân xưởng A | 0 |
+| NV007 | Đỗ Văn Khánh        | 10.000.000 | Công nhân SX     | Phân xưởng B | 2 |
+| NV008 | Bùi Thị Lan         | 14.000.000 | Nhân viên QA     | Phân xưởng B | 1 |
+| NV009 | Ngô Thanh Mai       | 13.500.000 | Nhân sự          | Văn phòng    | 3 |
+| NV010 | Trịnh Quang Phú     | 35.000.000 | Phó GĐ kinh doanh| Ban GĐ       | 1 |
+
+> **NV007 cố tình có ngày nghỉ không phép** trong tháng để minh hoạ tính
+> năng *mất tiền chuyên cần*. Nhiều NV có ngày **nửa ngày** (`half`) để test
+> tiền nửa ngày = tiền chuyên cần / 2. Dữ liệu rải đều **2 tháng** (tháng
+> trước trọn vẹn + tháng hiện tại tới ngày hôm nay) để có thể so sánh bảng
+> lương giữa 2 tháng.
 
 ## Reset database
 
@@ -354,12 +484,26 @@ typography, and transparent cash-flow layouts.
   HTML, swap `<main>`) so totals refresh without a full page flash. Deleting
   an employee removes the row in place. Working with monthly data feels like
   a single-page app.
+- **Single-password sign-in gate** — every data page is protected by the
+  `RequirePassword` middleware. On first launch, the app asks the user to
+  **create a password** and generates an **`XXXX-XXXX-XXXX-XXXX` recovery
+  code** displayed **exactly once** (it must be saved right away). The
+  session **expires when the browser/app closes**
+  (`SESSION_EXPIRE_ON_CLOSE=true`), so reopening always requires another
+  sign-in. If the password is forgotten, entering the recovery code at
+  `/auth/forgot` lets the user reset it — each successful reset also
+  generates a **new recovery code** (the previous one is invalidated). The
+  password is stored as a **bcrypt hash** in the `settings` table; no extra
+  migration is required. **Rate limiting**: 5 login attempts/minute and
+  3 recovery attempts/5 minutes. A **Sign-out** button sits next to the
+  theme toggle in the masthead.
 
 ## System Requirements
 
-- **PHP ≥ 8.2** (required by Laravel 11)
-- **MySQL ≥ 5.7** (XAMPP / MariaDB both work)
-- **Composer ≥ 2.5**
+- **PHP ≥ 8.3** (required by Laravel 12)
+- **MySQL ≥ 5.7** (XAMPP / MariaDB both work) — for web mode
+- **Composer ≥ 2.2**
+- **Node.js ≥ 22 + npm** — only required if you build/dev with NativePHP (desktop app)
 
 ## Installation Guide
 
@@ -411,8 +555,22 @@ php artisan migrate --seed
 
 This command will:
 - Create 8 tables: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
-- Create 5 sample employees (NV001 - NV005) with 20 days of attendance data
-- Auto-seed default values into the `settings` table on first visit to `/settings`
+- Seed **10 sample employees** (NV001–NV010) with diverse roles: production
+  workers, team lead, foreman, accountant, HR, QA, vice-director, director
+- Attendance for **two months** (full previous month + current month up to
+  today): all five states (`normal`, `sunday`, `half`, `leave`, `absent`).
+  NV007 has deliberate `absent` days to demonstrate diligence-bonus forfeit;
+  several employees have `half` days to verify half-day pay computation.
+- Overtime for workers & team leads (2 shifts every 5 days, 1 shift every 3 days)
+- Piece-rate wages for production workers (~20–25% of base salary)
+- A varied mix of allowances per role: responsibility, phone, transport, meal,
+  hazard pay (both `taxable` & `non_taxable`)
+- Salary advances for select employees, to verify end-of-month deductions
+- Default values auto-seeded into the `settings` table on first visit to `/settings`
+
+→ Roughly 450 attendance rows, 80 overtime rows, 50 allowances, 10 advances —
+enough variety to exercise every feature (individual payslip, company-wide
+payroll, month comparisons, PDF export, attendance grid print…).
 
 ### Step 6: Run the server
 
@@ -421,6 +579,16 @@ php artisan serve
 ```
 
 Open your browser at: **http://localhost:8000**
+
+#### First-time sign-in
+
+Open `http://localhost:8000` → you'll be redirected to **`/auth/setup`** to
+create a password (minimum 6 characters). Once created, the app shows your
+**`XXXX-XXXX-XXXX-XXXX` recovery code** — **click "Copy code" and save it
+immediately** (in your password manager, on paper, or anywhere safe). The
+code is shown **exactly once**; leaving the page makes it unrecoverable. If
+you later forget the password, go to `/auth/forgot`, enter the recovery
+code, and reset — every reset issues a fresh recovery code.
 
 #### One-click launcher (Windows)
 
@@ -444,6 +612,80 @@ If you want a single `.exe` you can pin to the desktop, use the free
 `start.bat`, optionally pick an icon, then click *Convert* to produce
 `start.exe`. The `.exe` is just a thin wrapper around the `.bat` — no
 runtime installation required.
+
+## Packaging as a Windows Desktop App (NativePHP / Electron)
+
+This section turns the app into a **standalone `.exe` folder** that runs
+without XAMPP, without MySQL, without PHP on the user's machine. It uses
+[NativePHP for Electron](https://nativephp.com/) to bundle a PHP runtime +
+SQLite + the entire Laravel app into a single distributable package.
+
+### Additional requirements
+- **Node.js ≥ 22** & npm (verify: `node --version`)
+- First build downloads the Electron Windows binary (~150 MB)
+
+### Step 1: Install NativePHP (already wired into composer.json)
+After `composer install`, the post-install hooks download `nativephp/electron`,
+publish its config, install npm dependencies under
+`vendor/nativephp/electron/resources/js/`, and apply compatibility patches via
+[`scripts/apply-nativephp-patches.php`](tax-calculator/scripts/apply-nativephp-patches.php)
+(downgrade `electron-store@10→8`, `get-port@7→5`, `electron-context-menu@4→3`;
+remove `type:module`; add a `portNumbers` shim; drop a sub-`package.json`
+under `electron-plugin/dist/server/` that re-enables ESM there — all needed
+because NativePHP 1.3.0 + Node ≥20 hits a known ESM/CJS bridge bug otherwise).
+
+### Step 2: Dev mode (open the Electron window from source)
+```bash
+# Windows: double-click or run from a terminal:
+dev-native.bat
+```
+This script:
+1. Backs up `.env` (MySQL config) to `.env.bak`
+2. Swaps in `.env.nativephp` (SQLite + NativePHP metadata) as `.env`
+3. Creates `database/database.sqlite` if missing, runs migrate + seed
+4. Unsets `ELECTRON_RUN_AS_NODE` (a stray env var that otherwise crashes Electron)
+5. Runs `php artisan native:serve` → an Electron window opens with PHP hot-reload
+6. On exit: restores `.env` to MySQL
+
+### Step 3: Build the production `.exe`
+```bash
+# .env must currently be SQLite — run dev-native.bat once to swap
+php artisan native:build win x64
+```
+- Takes 10–30 minutes (Electron binary download, asar bundling, electron-builder)
+- Output: `dist/win-unpacked/tax-calculator.exe` (~178 MB) — ready to run
+- The entire `dist/win-unpacked/` folder (~390 MB) can be copied to any other
+  machine and launched directly, no install required
+- The bundled `.env` is `.env.nativephp` (SQLite). The DB is created
+  automatically at `%APPDATA%\tax-calculator\database\database.sqlite` on
+  first launch
+- The app auto-runs migrate + seed on first launch (via
+  `NativeAppServiceProvider`), so the user sees 10 sample employees
+  immediately — no manual import needed to test features
+
+#### NSIS installer (`Tax Calculator-1.0.0-setup.exe`)
+By default, electron-builder also tries to produce an NSIS installer, but it
+needs to extract `winCodeSign` (which contains macOS dylib symlinks). Windows
+refuses to create symlinks without admin or Developer Mode. Two workarounds:
+- **Turn on Developer Mode**: Settings → System → For developers → Developer Mode = On
+- **Or run the terminal as "Run as Administrator"** for one build — the cache
+  extracts successfully and stays valid for subsequent normal-user builds
+
+If you only need a runnable app (no installer), `dist/win-unpacked/` is
+already sufficient.
+
+### Important notes
+- **Two parallel environments**:
+  - `start.bat` → web mode (MySQL/XAMPP at `localhost:8000`) — best for fast
+    dev with hot reload and browser DevTools
+  - `dev-native.bat` → desktop mode (SQLite inside the Electron window) — best
+    to feature-test the real packaged experience before building
+- **Don't mix databases**: MySQL and SQLite data are separate. Switching to
+  `dev-native.bat` swaps to SQLite at `database/database.sqlite`. First
+  Electron launch will seed 10 sample employees into that SQLite file.
+- **After `composer update`**: `apply-nativephp-patches.php` re-runs
+  automatically via `post-update-cmd` (wired in composer.json) so the patches
+  survive any vendor refresh.
 
 ## Salary & Tax Formulas
 
@@ -522,30 +764,38 @@ tax-calculator/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/     HomeController, EmployeeController, AttendanceController, PayrollController,
-│   │   │                    SettingController, HelpController, LocaleController
-│   │   └── Middleware/      SetLocale (reads the locale from the session and calls App::setLocale)
+│   │   │                    SettingController, HelpController, LocaleController, AuthController
+│   │   └── Middleware/      SetLocale (reads the locale from the session)
+│   │                        RequirePassword (guards every route, redirects to /auth/setup or /auth/login)
 │   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
-│   ├── Services/            TaxService, PayrollService, SettingService
+│   ├── Providers/           AppServiceProvider, NativeAppServiceProvider (Electron window config + auto-seed)
+│   ├── Services/            TaxService, PayrollService, SettingService, AuthGate (hash & verify password/recovery)
 │   ├── Imports/             EmployeesImport (parse-only, buckets new/duplicate rows)
 │   └── Exports/             EmployeesTemplateExport (generates the blank XLSX template)
 ├── database/
-│   ├── migrations/          8 migration files
-│   └── seeders/             DatabaseSeeder (5 sample employees)
+│   ├── migrations/          9 migration files (driver-aware: work on both MySQL & SQLite)
+│   └── seeders/             DatabaseSeeder (10 sample employees × 2 months, all 5 attendance types)
 ├── lang/
 │   ├── vi.json              Vietnamese source strings
-│   └── en.json              English translations (~190 keys)
+│   └── en.json              English translations (~220 keys)
 ├── resources/views/
-│   ├── layouts/app.blade.php  (masthead + VI/EN toggle + theme toggle + pre-flight script)
+│   ├── layouts/app.blade.php  (masthead + VI/EN toggle + theme toggle + sign-out + pre-flight script)
+│   ├── auth/                (layout, setup, setup-success, login, forgot — single-password sign-in gate)
 │   ├── home.blade.php
 │   ├── help.blade.php       (2-column user guide: sticky TOC + content)
 │   ├── employees/           (includes the import modal + duplicate-comparison modal)
 │   ├── attendance/
 │   ├── payroll/
 │   └── settings/
+├── scripts/
+│   └── apply-nativephp-patches.php   (runs automatically after composer install/update — patches vendor JS)
 ├── routes/web.php
-├── start.bat                One-click launcher (Windows)
+├── config/nativephp.php     NativePHP config (window, updater, queue workers)
+├── start.bat                Web-mode launcher (Windows) — MySQL/XAMPP
 ├── stop.bat                 Stops the Laravel server
-└── .env
+├── dev-native.bat           Desktop-mode launcher (Electron + SQLite) — swaps .env automatically
+├── .env                     MySQL config for web mode
+└── .env.nativephp           SQLite config for desktop mode (used by dev-native.bat)
 ```
 
 ## Main URLs
@@ -564,16 +814,35 @@ tax-calculator/
 | `POST /employees/import` | Upload Excel file (phase 1: analyze duplicates) |
 | `POST /employees/import/commit` | Confirm keep/overwrite after the popup (phase 2) |
 | `POST /locale/{vi\|en}` | Switch language (persisted in session) |
+| `GET /auth/setup` | First-time password creation (shown only when none exists) |
+| `POST /auth/setup` | Save the new password and issue a recovery code |
+| `GET /auth/recovery` | One-time display of the recovery code |
+| `GET /auth/login` | Single-password sign-in form |
+| `POST /auth/login` | Authenticate the password (rate-limited 5/min) |
+| `POST /auth/logout` | Sign out and clear the session |
+| `GET /auth/forgot` | Recovery-code-based password reset form |
+| `POST /auth/forgot` | Reset the password and issue a new recovery code (rate-limited 3/5min) |
 
-## Sample employee codes after seeding
+## Sample employee codes after seeding (10 employees)
 
-| Code | Full name | Base salary (VND) | Position |
-|---|---|---|---|
-| NV001 | Nguyễn Văn An | 8,000,000 | Production worker |
-| NV002 | Trần Thị Bích | 15,000,000 | Team leader |
-| NV003 | Lê Quốc Cường | 25,000,000 | Shop manager |
-| NV004 | Phạm Thu Dung | 12,000,000 | Accountant |
-| NV005 | Hoàng Minh Đức | 50,000,000 | Director |
+| Code | Full name | Base salary (VND) | Position | Department | Dependants |
+|---|---|---|---|---|---|
+| NV001 | Nguyễn Văn An       |  8,000,000 | Production worker  | Workshop A | 1 |
+| NV002 | Trần Thị Bích       | 15,000,000 | Team leader        | Workshop A | 2 |
+| NV003 | Lê Quốc Cường       | 25,000,000 | Shop manager       | Workshop B | 0 |
+| NV004 | Phạm Thu Dung       | 12,000,000 | Accountant         | Office     | 1 |
+| NV005 | Hoàng Minh Đức      | 50,000,000 | Director           | Exec       | 2 |
+| NV006 | Vũ Thị Hà           |  9,500,000 | Production worker  | Workshop A | 0 |
+| NV007 | Đỗ Văn Khánh        | 10,000,000 | Production worker  | Workshop B | 2 |
+| NV008 | Bùi Thị Lan         | 14,000,000 | QA technician      | Workshop B | 1 |
+| NV009 | Ngô Thanh Mai       | 13,500,000 | HR officer         | Office     | 3 |
+| NV010 | Trịnh Quang Phú     | 35,000,000 | VP Sales           | Exec       | 1 |
+
+> **NV007 deliberately has unpaid leave days** during the month to demonstrate
+> *diligence-bonus forfeiture*. Several employees have **half-day** records
+> to test half-day pay (= diligence bonus / 2). Data covers **two months**
+> (the full previous month + the current month up to today) so you can
+> compare payrolls across months.
 
 ## Reset the database
 
@@ -584,8 +853,8 @@ php artisan migrate:fresh --seed
 
 ## Tech Stack
 
-- **Backend:** Laravel 11, PHP 8.2+
-- **Database:** MySQL / MariaDB
+- **Backend:** Laravel 12, PHP 8.3+
+- **Database:** MySQL / MariaDB (web mode) · SQLite (desktop mode via NativePHP)
 - **Frontend:** Blade templates, Bootstrap 5.3 (heavily themed)
 - **Typography:** EB Garamond (serif body/figures), Inter (small-caps labels/buttons),
   IBM Plex Mono (keys, codes) — loaded from Google Fonts
@@ -601,7 +870,18 @@ php artisan migrate:fresh --seed
   `[data-ajax-delete]` element — controllers return JSON when
   `$request->wantsJson()` is true, redirect otherwise (graceful fallback if
   JavaScript is disabled)
-- **Runtime:** XAMPP (Apache + MySQL) on Windows
+- **Authentication:** single-password gate (no username) — bcrypt-hashed
+  password + recovery code stored in the `settings` table via the `AuthGate`
+  service, guarded by the `RequirePassword` middleware, with rate limiting
+  via Laravel's built-in `RateLimiter` facade. Session-only cookies
+  (`SESSION_EXPIRE_ON_CLOSE=true`) so closing the browser ends the session.
+- **Desktop packaging:** [NativePHP for Electron](https://nativephp.com/) 1.3.0
+  bundles a PHP runtime + SQLite + the whole Laravel app into a single
+  Electron app. The `NativeAppServiceProvider` configures the window
+  (1280×820, remembers state, min 1024×640) and auto-seeds sample data on
+  first launch. Compatibility patches applied via
+  `scripts/apply-nativephp-patches.php` (re-run after every composer update).
+- **Runtime:** XAMPP (web mode) · standalone .exe with bundled PHP (desktop mode)
 
 ## License
 

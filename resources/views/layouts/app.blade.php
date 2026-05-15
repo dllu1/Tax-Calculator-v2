@@ -793,6 +793,14 @@
                         <i class="bi bi-moon-stars gz-theme-dark"></i>
                         <i class="bi bi-sun gz-theme-light"></i>
                     </button>
+                    {{-- Logout --}}
+                    <form action="{{ route('auth.logout') }}" method="POST" style="display:inline;"
+                          onsubmit="return confirm('{{ __('Bạn có chắc muốn đăng xuất?') }}');">
+                        @csrf
+                        <button type="submit" class="gz-ctrl-btn" title="{{ __('Đăng xuất') }}">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

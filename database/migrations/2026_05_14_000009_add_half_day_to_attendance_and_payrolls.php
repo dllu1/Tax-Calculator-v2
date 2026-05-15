@@ -9,7 +9,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE attendances MODIFY type ENUM('normal','sunday','absent','leave','half') NOT NULL DEFAULT 'normal'");
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            DB::statement("ALTER TABLE attendances MODIFY type ENUM('normal','sunday','absent','leave','half') NOT NULL DEFAULT 'normal'");
+        } else {
+            // SQLite/PostgreSQL: use portable schema change. Laravel translates
+            // enum() to TEXT + CHECK on SQLite and to a named CHECK constraint
+            // on PostgreSQL.
+            Schema::table('attendances', function (Blueprint $table) {
+                $table->enum('type', ['normal', 'sunday', 'absent', 'leave', 'half'])->default('normal')->change();
+            });
+        }
 
         Schema::table('payrolls', function (Blueprint $table) {
             $table->unsignedTinyInteger('half_days')->default(0)->after('absent_days');
@@ -23,6 +34,14 @@ return new class extends Migration
             $table->dropColumn(['half_days', 'half_day_amount']);
         });
 
-        DB::statement("ALTER TABLE attendances MODIFY type ENUM('normal','sunday','absent','leave') NOT NULL DEFAULT 'normal'");
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            DB::statement("ALTER TABLE attendances MODIFY type ENUM('normal','sunday','absent','leave') NOT NULL DEFAULT 'normal'");
+        } else {
+            Schema::table('attendances', function (Blueprint $table) {
+                $table->enum('type', ['normal', 'sunday', 'absent', 'leave'])->default('normal')->change();
+            });
+        }
     }
 };
