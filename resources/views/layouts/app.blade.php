@@ -471,6 +471,34 @@
         }
         .btn-outline-info:hover { background: var(--gz-ink); color: var(--gz-surface); }
         .btn-light { background: transparent; border-color: var(--gz-rule); color: var(--gz-ink); }
+
+        /* ===== BTN-CHECK: checked/active states (gazette theme overrides Bootstrap) ===== */
+        .btn-check:checked + .btn-outline-success,
+        .btn-check:active + .btn-outline-success,
+        .btn-outline-success.active {
+            background: var(--gz-success); border-color: var(--gz-success); color: #fff;
+        }
+        .btn-check:checked + .btn-outline-info,
+        .btn-check:active + .btn-outline-info,
+        .btn-outline-info.active {
+            background: var(--gz-ink-soft); border-color: var(--gz-ink-soft); color: var(--gz-surface);
+        }
+        .btn-check:checked + .btn-outline-warning,
+        .btn-check:active + .btn-outline-warning,
+        .btn-outline-warning.active {
+            background: var(--gz-warning); border-color: var(--gz-warning); color: #fff;
+        }
+        .btn-check:checked + .btn-outline-secondary,
+        .btn-check:active + .btn-outline-secondary,
+        .btn-outline-secondary.active {
+            background: var(--gz-muted); border-color: var(--gz-muted); color: var(--gz-surface);
+        }
+        .btn-check:checked + .btn-outline-danger,
+        .btn-check:active + .btn-outline-danger,
+        .btn-outline-danger.active {
+            background: var(--gz-accent); border-color: var(--gz-accent); color: #fff;
+        }
+
         .btn-sm {
             font-size: 0.7rem;
             padding: 0.3rem 0.85rem;

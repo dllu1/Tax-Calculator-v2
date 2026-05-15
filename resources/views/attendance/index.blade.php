@@ -49,7 +49,7 @@
         {{ __('Cuối cùng bấm') }} <strong>"{{ __('Lưu Chấm Công') }}"</strong> {{ __('ở dưới.') }}
     </div>
 
-    <form method="POST" action="{{ route('attendance.save') }}" id="attForm" data-ajax="true">
+    <form method="POST" action="{{ route('attendance.save') }}" id="attForm">
         @csrf
         <input type="hidden" name="date" value="{{ $date->format('Y-m-d') }}">
 
