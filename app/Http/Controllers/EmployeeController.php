@@ -67,11 +67,13 @@ class EmployeeController extends Controller
 
     public function template(Request $request)
     {
-        // The template is pre-built into storage/app/templates/employees-template.xlsx
+        // The template is pre-built into resources/templates/employees-template.xlsx
         // by `php artisan app:rebuild-template` (which needs XMLWriter — NativePHP's
         // static-php-cli build is missing that extension, so we can't generate at
-        // runtime inside the Electron app).
-        $staticPath = storage_path('app/templates/employees-template.xlsx');
+        // runtime inside the Electron app). Lives under resource_path() rather than
+        // storage_path() because NativePHP rewrites storage_path() to a user-data
+        // directory that the project's static file does NOT get copied into.
+        $staticPath = resource_path('templates/employees-template.xlsx');
 
         if (!file_exists($staticPath)) {
             $msg = 'Template file missing. Run: C:\\xampp\\php\\php.exe artisan app:rebuild-template';

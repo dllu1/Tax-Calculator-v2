@@ -30,7 +30,9 @@ class RebuildEmployeeTemplate extends Command
             return 1;
         }
 
-        $out = storage_path('app/templates/employees-template.xlsx');
+        // resource_path() is fixed to the project bundle; storage_path() is rewritten
+        // by NativePHP at boot to point at a user-data dir.
+        $out = resource_path('templates/employees-template.xlsx');
         File::ensureDirectoryExists(dirname($out));
 
         $content = Excel::raw(new EmployeesTemplateExport(), ExcelWriter::XLSX);
