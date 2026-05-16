@@ -10,7 +10,9 @@ use App\Models\ProductSalary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 use Maatwebsite\Excel\Facades\Excel;
+use Native\Laravel\Facades\Shell;
 
 class EmployeeController extends Controller
 {
@@ -64,8 +66,37 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('success', $msg);
     }
 
-    public function template()
+    public function template(Request $request)
     {
+        // Electron flow: the BrowserWindow won't trigger a real download dialog
+        // for Content-Disposition: attachment. Frontend instead calls this route
+        // via AJAX — write the file to the user's Downloads folder and open it
+        // with the system default app (Excel) via Shell::openFile.
+        if ($request->wantsJson() || $request->ajax()) {
+            $home = $_SERVER['USERPROFILE'] ?? $_SERVER['HOME'] ?? sys_get_temp_dir();
+            $dir = is_dir($home . DIRECTORY_SEPARATOR . 'Downloads')
+                ? $home . DIRECTORY_SEPARATOR . 'Downloads'
+                : $home;
+
+            $filename = 'mau-import-nhan-vien-' . now()->format('Ymd-His') . '.xlsx';
+            $absPath = $dir . DIRECTORY_SEPARATOR . $filename;
+
+            $content = Excel::raw(new EmployeesTemplateExport(), ExcelWriter::XLSX);
+            file_put_contents($absPath, $content);
+
+            // Best-effort: if the Electron IPC bridge is unreachable we still want
+            // the success path — the file is already on disk and the toast surfaces
+            // the location so the user can open it manually.
+            try {
+                Shell::openFile($absPath);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            return response()->json(['ok' => true, 'path' => $absPath]);
+        }
+
+        // Browser fallback (`php artisan serve` outside Electron): direct download.
         return Excel::download(new EmployeesTemplateExport(), 'nien-giam-luong--mau-import-nhan-vien.xlsx');
     }
 

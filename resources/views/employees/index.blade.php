@@ -15,9 +15,10 @@
         </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('employees.template') }}" class="btn btn-outline-secondary">
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="openInSystem('{{ route('employees.template') }}')">
             <i class="bi bi-file-earmark-arrow-down"></i> {{ __('Tải File Mẫu') }}
-        </a>
+        </button>
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">
             <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import Excel') }}
         </button>

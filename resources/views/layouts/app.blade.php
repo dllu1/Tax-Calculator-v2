@@ -1294,6 +1294,21 @@
         }
     };
 
+    // ===== openInSystem: trigger a file download via AJAX and open it with the OS default app =====
+    // Replaces plain <a href> downloads, which don't fire a Save-As dialog inside Electron's
+    // BrowserWindow. Server writes the file to ~/Downloads then Shell::openFile launches it.
+    window.openInSystem = async function (url) {
+        try {
+            const res = await GZ.fetchJson(url, { method: 'GET' });
+            const okMsg = res && res.path
+                ? {!! json_encode(__('Đã lưu vào'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!} + ' ' + res.path
+                : {!! json_encode(__('Đã mở file trong ứng dụng mặc định'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
+            GZ.toast(okMsg, 'success');
+        } catch (e) {
+            GZ.toast(e.message || {!! json_encode(__('Lỗi mở file'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}, 'error');
+        }
+    };
+
     // ===== Preserve Bootstrap nav-tab state across soft-reloads =====
     // softReload() swaps <main>, so the server-rendered default (first tab)
     // wins unless we remember which tab the user was on.
