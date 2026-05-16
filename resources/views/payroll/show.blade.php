@@ -49,7 +49,8 @@
                 <option value="{{ $m }}" @selected($m == $month)>{{ __('Tháng') }} {{ $m }}/{{ $year }}</option>
             @endfor
         </select>
-        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+        <button type="button" class="btn btn-primary btn-sm"
+                onclick="exportPdf('payslip', {year: {{ $year }}, month: {{ $month }}, employee: {{ $employee->id }}})">
             <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
     </div>

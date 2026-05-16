@@ -122,7 +122,8 @@
             <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
             <button class="btn btn-sm btn-outline-primary">{{ __('Tính Lại') }}</button>
         </form>
-        <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+        <button type="button" class="btn btn-sm btn-primary"
+                onclick="exportPdf('payroll-summary', {year: {{ $year }}, month: {{ $month }}})">
             <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
     </div>
@@ -193,11 +194,10 @@
                            class="btn btn-sm btn-outline-info" title="{{ __('Xem phiếu lương') }}">
                             <i class="bi bi-eye"></i>
                         </a>
-                        <a href="{{ route('payroll.show', [$p->employee_id, $year, $month]) }}?print=1"
-                           target="_blank"
-                           class="btn btn-sm btn-outline-primary" title="{{ __('Xuất PDF') }}">
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="{{ __('Xuất PDF') }}"
+                                onclick="exportPdf('payslip', {year: {{ $year }}, month: {{ $month }}, employee: {{ $p->employee_id }}})">
                             <i class="bi bi-file-earmark-pdf"></i>
-                        </a>
+                        </button>
                     </div>
                 </td>
             </tr>

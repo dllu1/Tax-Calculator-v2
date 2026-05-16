@@ -1276,6 +1276,24 @@
         return { toast, fetchJson, submitForm, ajaxDelete, softReload };
     })();
 
+    // ===== exportPdf: open a print-ready route in the user's default browser =====
+    // Electron's native print dialog has no preview; we POST to /pdf/open which
+    // signs a temporary URL and hands it to Shell::openExternal — Edge/Chrome
+    // then renders the page and the user presses Ctrl+P for a real print preview.
+    window.exportPdf = async function (type, params) {
+        const fd = new FormData();
+        const csrf = document.querySelector('meta[name=csrf-token]')?.content || '';
+        fd.append('_token', csrf);
+        fd.append('type', type);
+        for (const [k, v] of Object.entries(params)) fd.append(k, v);
+        try {
+            await GZ.fetchJson('/pdf/open', { method: 'POST', body: fd });
+            GZ.toast({!! json_encode(__('Đã mở trong trình duyệt — bấm Ctrl+P để in/lưu PDF'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}, 'success');
+        } catch (e) {
+            GZ.toast(e.message || {!! json_encode(__('Lỗi mở trang in'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}, 'error');
+        }
+    };
+
     // ===== Preserve Bootstrap nav-tab state across soft-reloads =====
     // softReload() swaps <main>, so the server-rendered default (first tab)
     // wins unless we remember which tab the user was on.

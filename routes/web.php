@@ -7,6 +7,7 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -58,3 +59,16 @@ Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 Route::post('/locale/{locale}', [LocaleController::class, 'switch'])
     ->whereIn('locale', ['vi', 'en'])
     ->name('locale.switch');
+
+// PDF: signed routes are opened in the user's default browser via Shell::openExternal,
+// so they can use Chromium's full print preview (Ctrl+P). RequirePassword middleware
+// bypasses session auth for these specific routes when the URL signature is valid.
+Route::middleware('signed')->prefix('pdf/print')->name('pdf.print.')->group(function () {
+    Route::get('/attendance-month/{year}/{month}', [PdfController::class, 'attendanceMonth'])
+        ->whereNumber(['year', 'month'])->name('attendance-month');
+    Route::get('/payroll-summary/{year}/{month}', [PdfController::class, 'payrollSummary'])
+        ->whereNumber(['year', 'month'])->name('payroll-summary');
+    Route::get('/payslip/{employee}/{year}/{month}', [PdfController::class, 'payslip'])
+        ->whereNumber(['year', 'month'])->name('payslip');
+});
+Route::post('/pdf/open', [PdfController::class, 'openInBrowser'])->name('pdf.open');

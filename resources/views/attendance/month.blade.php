@@ -127,7 +127,8 @@
             <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
             <button class="btn btn-sm btn-outline-primary">{{ __('Xem') }}</button>
         </form>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
+        <button type="button" class="btn btn-sm btn-outline-primary"
+                onclick="exportPdf('attendance-month', {year: {{ $year }}, month: {{ $month }}})">
             <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
         <a href="{{ route('attendance.index') }}" class="btn btn-sm btn-primary">

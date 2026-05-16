@@ -23,6 +23,12 @@ class RequirePassword
             return $next($request);
         }
 
+        // PDF print routes are reached from the user's default browser (Shell::openExternal)
+        // which has no session cookie — auth is enforced by the HMAC signature on the URL.
+        if (str_starts_with($routeName, 'pdf.print.') && $request->hasValidSignature()) {
+            return $next($request);
+        }
+
         if (!$this->gate->hasPassword()) {
             if ($routeName === 'auth.setup' || $routeName === 'auth.setup.store') {
                 return $next($request);
