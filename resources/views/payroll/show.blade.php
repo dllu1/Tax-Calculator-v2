@@ -167,7 +167,9 @@
                 <tr><td>{{ __('Tiền ăn tăng ca') }}</td><td>{{ $fmt($payroll->meal_overtime) }}</td></tr>
                 <tr><td>{{ __('Lương sản phẩm') }}</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
                 <tr><td>{{ __('Chuyên cần') }}</td><td>{{ $fmt($payroll->diligence) }}</td></tr>
-                <tr><td>{{ __('Lương nửa ngày') }} <small class="text-muted">({{ $payroll->half_days ?? 0 }} {{ __('nửa ngày') }} × ½ {{ __('chuyên cần') }})</small></td><td>{{ $fmt($payroll->half_day_amount ?? 0) }}</td></tr>
+                @if (($payroll->half_days ?? 0) > 0)
+                <tr><td>{{ __('Số ngày làm nửa ngày') }} <small class="text-muted">({{ __('đã gộp vào Lương ngày công ở trên') }})</small></td><td>{{ $payroll->half_days }} {{ __('nửa ngày') }}</td></tr>
+                @endif
                 <tr><td>{{ __('Thưởng Tết') }}</td><td>{{ $fmt($payroll->tet_bonus ?? 0) }}</td></tr>
                 <tr><td>{{ __('Lương phép năm') }}</td><td>{{ $fmt($payroll->annual_leave_pay ?? 0) }}</td></tr>
                 <tr><td>{{ __('Phụ cấp chịu thuế') }}</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>

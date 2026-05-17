@@ -73,9 +73,15 @@ class PayrollService
         // Lương ngày
         $basicSalary = (float) $employee->basic_salary;
         $dailyRate = $standardDays > 0 ? $basicSalary / $standardDays : 0;
-        // Chủ nhật cả ngày: hệ số cấu hình (×2). Nửa ngày chủ nhật: bằng đúng 1 ngày công
-        // (nửa ngày × hệ số CN = 0.5 × 2 = 1) — theo yêu cầu của user.
-        $totalWorkDays = $normalDays + ($sundayDays * $sundayMultiplier) + $sundayHalfDays;
+        // Tổng công quy đổi:
+        //   - Ngày thường: 1 công/ngày
+        //   - Nửa ngày thường: 0.5 công
+        //   - Chủ nhật cả ngày: × hệ số cấu hình (mặc định ×2)
+        //   - Nửa ngày chủ nhật: 0.5 × hệ số = 1 công (bằng đúng 1 ngày công, theo yêu cầu)
+        $totalWorkDays = $normalDays
+            + ($halfDays * 0.5)
+            + ($sundayDays * $sundayMultiplier)
+            + ($sundayHalfDays * 0.5 * $sundayMultiplier);
         $dayWage = round($dailyRate * $totalWorkDays, 0);
 
         // Tăng ca theo hệ số cấu hình
@@ -91,8 +97,9 @@ class PayrollService
             ? (float) $employee->diligence_bonus
             : 0.0;
 
-        // Lương nửa ngày: mỗi ngày half-day = chuyên cần / 2 (theo cấu hình của người dùng)
-        $halfDayAmount = round($halfDays * ((float) $employee->diligence_bonus / 2), 0);
+        // Lương nửa ngày đã được cộng vào $dayWage qua $totalWorkDays (halfDays × 0.5).
+        // Cột half_day_amount giữ lại trên payroll record với giá trị 0 cho tương thích DB.
+        $halfDayAmount = 0;
 
         // Thưởng Tết & lương phép năm (cố định trên hồ sơ NV — user tự reset về 0 khi tháng
         // đã trả xong nếu chỉ phát 1 lần/năm).
