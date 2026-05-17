@@ -44,6 +44,7 @@ class PayrollService
 
         $normalDays = $attendances->where('type', Attendance::TYPE_NORMAL)->count();
         $sundayDays = $attendances->where('type', Attendance::TYPE_SUNDAY)->count();
+        $sundayHalfDays = $attendances->where('type', Attendance::TYPE_SUNDAY_HALF)->count();
         $absentDays = $attendances->where('type', Attendance::TYPE_ABSENT)->count();
         $halfDays = $attendances->where('type', Attendance::TYPE_HALF)->count();
 
@@ -72,19 +73,21 @@ class PayrollService
         // Lương ngày
         $basicSalary = (float) $employee->basic_salary;
         $dailyRate = $standardDays > 0 ? $basicSalary / $standardDays : 0;
-        // Chủ nhật áp hệ số cấu hình
-        $totalWorkDays = $normalDays + ($sundayDays * $sundayMultiplier);
+        // Chủ nhật cả ngày: hệ số cấu hình (×2). Nửa ngày chủ nhật: bằng đúng 1 ngày công
+        // (nửa ngày × hệ số CN = 0.5 × 2 = 1) — theo yêu cầu của user.
+        $totalWorkDays = $normalDays + ($sundayDays * $sundayMultiplier) + $sundayHalfDays;
         $dayWage = round($dailyRate * $totalWorkDays, 0);
 
         // Tăng ca theo hệ số cấu hình
         $overtimeWage = round($dailyRate * $overtimeMultiplier * $overtimeShifts, 0);
 
-        // Tiền ăn (theo ngày có mặt thực tế = normal + sunday + half)
-        $mealShift = $mealPerDay * ($normalDays + $sundayDays + $halfDays);
+        // Tiền ăn (theo ngày có mặt thực tế). Nửa ngày CN cũng được tính 1 suất cơm như half
+        // (đồng nhất với cách xử lý half-day thường — ăn đủ 1 bữa dù chỉ làm nửa ngày).
+        $mealShift = $mealPerDay * ($normalDays + $sundayDays + $halfDays + $sundayHalfDays);
         $mealOvertime = $mealPerOt * $overtimeShifts;
 
-        // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). "leave" và "half" không phá chuyên cần.
-        $diligence = $absentDays === 0 && ($normalDays + $sundayDays + $halfDays) > 0
+        // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). "leave", "half", "sunday_half" không phá chuyên cần.
+        $diligence = $absentDays === 0 && ($normalDays + $sundayDays + $halfDays + $sundayHalfDays) > 0
             ? (float) $employee->diligence_bonus
             : 0.0;
 
@@ -130,7 +133,7 @@ class PayrollService
 
         return DB::transaction(function () use (
             $employee, $year, $month,
-            $normalDays, $sundayDays, $absentDays, $halfDays, $overtimeShifts,
+            $normalDays, $sundayDays, $sundayHalfDays, $absentDays, $halfDays, $overtimeShifts,
             $dayWage, $overtimeWage, $mealShift, $mealOvertime,
             $productSalary, $diligence, $halfDayAmount, $taxableAllowances, $nonTaxableAllowances,
             $totalIncome, $taxableIncome, $personalDeduction, $dependentDeduction,
@@ -141,6 +144,7 @@ class PayrollService
                 [
                     'normal_days' => $normalDays,
                     'sunday_days' => $sundayDays,
+                    'sunday_half_days' => $sundayHalfDays,
                     'absent_days' => $absentDays,
                     'half_days' => $halfDays,
                     'overtime_shifts' => $overtimeShifts,

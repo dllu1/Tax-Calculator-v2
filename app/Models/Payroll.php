@@ -12,9 +12,9 @@ class Payroll extends Model
 
     protected $fillable = [
         'employee_id', 'year', 'month',
-        'normal_days', 'sunday_days', 'absent_days', 'overtime_shifts',
+        'normal_days', 'sunday_days', 'sunday_half_days', 'absent_days', 'half_days', 'overtime_shifts',
         'day_wage', 'overtime_wage', 'meal_shift', 'meal_overtime',
-        'product_salary', 'diligence', 'taxable_allowances', 'non_taxable_allowances',
+        'product_salary', 'diligence', 'half_day_amount', 'taxable_allowances', 'non_taxable_allowances',
         'total_income',
         'taxable_income', 'personal_deduction', 'dependent_deduction',
         'bhxh_amount', 'assessable_income', 'pit_amount',

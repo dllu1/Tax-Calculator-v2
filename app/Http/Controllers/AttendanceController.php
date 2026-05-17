@@ -99,14 +99,34 @@ class AttendanceController extends Controller
 
         $employees = Employee::where('is_active', true)->orderBy('employee_code')->get();
 
-        $attendances = Attendance::whereBetween('work_date', [$start, $end])->get()
-            ->groupBy(fn($a) => $a->employee_id . '|' . $a->work_date->format('Y-m-d'));
+        $attRecords = Attendance::whereBetween('work_date', [$start, $end])->get();
+        $otRecords = Overtime::whereBetween('work_date', [$start, $end])->get();
 
-        $overtimes = Overtime::whereBetween('work_date', [$start, $end])->get()
-            ->groupBy(fn($o) => $o->employee_id . '|' . $o->work_date->format('Y-m-d'));
+        $attendances = $attRecords->groupBy(fn($a) => $a->employee_id . '|' . $a->work_date->format('Y-m-d'));
+        $overtimes = $otRecords->groupBy(fn($o) => $o->employee_id . '|' . $o->work_date->format('Y-m-d'));
+
+        // Per-employee monthly totals for the 3 rightmost summary columns.
+        // half + sunday_half count as 0.5 day each — consistent with how they appear in payroll.
+        $totals = [];
+        foreach ($employees as $emp) {
+            $totals[$emp->id] = ['normal' => 0.0, 'sunday' => 0.0, 'overtime' => 0];
+        }
+        foreach ($attRecords as $a) {
+            if (!isset($totals[$a->employee_id])) continue;
+            switch ($a->type) {
+                case Attendance::TYPE_NORMAL:      $totals[$a->employee_id]['normal'] += 1;   break;
+                case Attendance::TYPE_HALF:        $totals[$a->employee_id]['normal'] += 0.5; break;
+                case Attendance::TYPE_SUNDAY:      $totals[$a->employee_id]['sunday'] += 1;   break;
+                case Attendance::TYPE_SUNDAY_HALF: $totals[$a->employee_id]['sunday'] += 0.5; break;
+            }
+        }
+        foreach ($otRecords as $o) {
+            if (!isset($totals[$o->employee_id])) continue;
+            $totals[$o->employee_id]['overtime'] += (int) $o->shifts;
+        }
 
         return view('attendance.month', compact(
-            'employees', 'year', 'month', 'start', 'end', 'attendances', 'overtimes'
+            'employees', 'year', 'month', 'start', 'end', 'attendances', 'overtimes', 'totals'
         ));
     }
 }

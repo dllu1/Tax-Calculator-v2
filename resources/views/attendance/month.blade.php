@@ -3,6 +3,26 @@
 
 @push('scripts')
 <style>
+    /* ===== Screen: totals columns (rightmost) — visually separated from day grid ===== */
+    .gz-grid-table .totals-group {
+        background: var(--gz-surface-2) !important;
+        border-left: 2px solid var(--gz-ink) !important;
+    }
+    .gz-grid-table .totals-col {
+        background: var(--gz-surface-2) !important;
+        font-family: 'IBM Plex Mono', Consolas, monospace;
+        font-size: 0.85rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .gz-grid-table thead .totals-col {
+        font-size: 0.7rem;
+        line-height: 1.1;
+    }
+    .gz-grid-table tbody .totals-col:first-of-type,
+    .gz-grid-table thead .totals-col:first-of-type {
+        border-left: 2px solid var(--gz-ink) !important;
+    }
+
     /* ===== B&W Excel-style attendance grid for print ===== */
     @media print {
         @page { size: A4 landscape; margin: 8mm 8mm; }
@@ -82,7 +102,7 @@
         }
         .gz-grid-table thead th small { color: #000 !important; font-size: 6.5pt !important; }
 
-        /* Cell content: keep the letter codes (N / ½ / CN / P / X), no color */
+        /* Cell content: keep the letter codes (N / ½ / CN / CN½ / P / X), no color */
         .att-cell {
             min-width: 0 !important;
             color: #000 !important;
@@ -94,6 +114,21 @@
         }
         .att-cell.att-absent a { font-weight: 800 !important; }
         .att-cell small { color: #000 !important; font-size: 6.5pt !important; }
+
+        /* Totals columns: shaded + thicker left rule so they read as a separate block */
+        .gz-grid-table .totals-group,
+        .gz-grid-table .totals-col {
+            background: #d9d9d9 !important;
+            font-weight: 700 !important;
+            border: 0.5pt solid #000 !important;
+        }
+        .gz-grid-table tbody .totals-col {
+            background: #f0f0f0 !important;
+        }
+        .gz-grid-table tbody .totals-col:first-of-type,
+        .gz-grid-table thead .totals-col:first-of-type {
+            border-left: 1.2pt solid #000 !important;
+        }
     }
 </style>
 @endpush
@@ -104,6 +139,8 @@
     $weekDays = app()->getLocale() === 'en'
         ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
         : ['CN','T2','T3','T4','T5','T6','T7'];
+    // Strip trailing ".0" so 8.0 reads as "8" while 8.5 stays as "8.5"
+    $totalFmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 1, ',', '.'), '0'), ',');
 @endphp
 
 <div class="gz-section-rule">
@@ -143,6 +180,7 @@
         <span><span class="badge att-normal" style="padding:2px 8px; border-radius:0;">N</span> {{ __('Ngày thường') }}</span>
         <span><span class="badge att-half" style="padding:2px 8px; border-radius:0;">½</span> {{ __('Nửa ngày') }}</span>
         <span><span class="badge att-sunday" style="padding:2px 8px; border-radius:0;">CN</span> {{ __('Chủ nhật (×2 công)') }}</span>
+        <span><span class="badge att-sunday" style="padding:2px 8px; border-radius:0;">CN½</span> {{ __('Nửa ngày Chủ nhật (=1 công)') }}</span>
         <span><span class="badge att-leave" style="padding:2px 8px; border-radius:0;">P</span> {{ __('Có phép') }}</span>
         <span><span class="badge att-absent" style="padding:2px 8px; border-radius:0;">X</span> {{ __('Không phép') }}</span>
         <span class="text-muted"><em>{{ __('Số nhỏ ở dưới = số ca tăng ca') }}</em></span>
@@ -154,6 +192,7 @@
             <tr>
                 <th rowspan="2" style="min-width:200px; text-align:left; padding-left:0.6rem;">{{ __('Nhân viên') }}</th>
                 <th colspan="{{ $end->day }}">{{ __('Ngày trong tháng') }} {{ $month }}/{{ $year }}</th>
+                <th colspan="3" class="totals-group">{{ __('Tổng tháng') }}</th>
             </tr>
             <tr>
                 @for ($d=1; $d <= $end->day; $d++)
@@ -162,6 +201,15 @@
                         {{ $d }}<br><small style="color:var(--gz-muted);">{{ $weekDays[$date->dayOfWeek] }}</small>
                     </th>
                 @endfor
+                <th class="totals-col" style="min-width:54px" title="{{ __('Tổng số ngày thường (½ = 0.5)') }}">
+                    {{ __('Ngày thường') }}
+                </th>
+                <th class="totals-col" style="min-width:54px" title="{{ __('Tổng số ca tăng ca') }}">
+                    {{ __('Tăng ca') }}
+                </th>
+                <th class="totals-col" style="min-width:54px" title="{{ __('Tổng số ngày Chủ nhật (½ = 0.5)') }}">
+                    {{ __('CN') }}
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -178,15 +226,17 @@
                     $att = $attendances->get($dateKey)?->first();
                     $ot = $overtimes->get($dateKey)?->first();
                     $cls = match ($att?->type) {
-                        'normal'  => 'att-normal',
-                        'half'    => 'att-half',
-                        'sunday'  => 'att-sunday',
-                        'leave'   => 'att-leave',
-                        'absent'  => 'att-absent',
-                        default   => '',
+                        'normal'      => 'att-normal',
+                        'half'        => 'att-half',
+                        'sunday'      => 'att-sunday',
+                        'sunday_half' => 'att-sunday',
+                        'leave'       => 'att-leave',
+                        'absent'      => 'att-absent',
+                        default       => '',
                     };
                     $letter = match ($att?->type) {
-                        'normal' => 'N', 'half' => '½', 'sunday' => 'CN', 'leave' => 'P', 'absent' => 'X', default => '—',
+                        'normal' => 'N', 'half' => '½', 'sunday' => 'CN', 'sunday_half' => 'CN½',
+                        'leave' => 'P', 'absent' => 'X', default => '—',
                     };
                 @endphp
                 <td class="att-cell {{ $cls }}">
@@ -199,6 +249,10 @@
                     </a>
                 </td>
             @endfor
+            @php $t = $totals[$emp->id] ?? ['normal' => 0, 'sunday' => 0, 'overtime' => 0]; @endphp
+            <td class="totals-col"><strong>{{ $totalFmt($t['normal']) }}</strong></td>
+            <td class="totals-col"><strong>{{ $t['overtime'] }}</strong></td>
+            <td class="totals-col"><strong>{{ $totalFmt($t['sunday']) }}</strong></td>
         </tr>
         @endforeach
         </tbody>

@@ -50,19 +50,21 @@
     </div>
 
     @php
-        // Sunday: render a single CHECKBOX toggle for 'sunday' — the user can
-        // click to mark a Sunday shift, click again to clear (deletes the row).
-        // Weekdays: keep the radio-button group with no 'sunday' option.
+        // Sunday: render TWO independent CHECKBOX toggles — 'sunday' (full Sunday shift,
+        // 2× rate) and 'sunday_half' (half Sunday, paid 1× normal day rate). JS keeps them
+        // mutually exclusive within each employee row since the DB stores one type per day.
+        // Weekdays: keep the radio-button group with no 'sunday' / 'sunday_half' option.
         $isSunday = $date->isSunday();
         $allOptions = [
-            'normal' => ['label' => __('Đi làm'),     'icon' => 'bi-check-lg',   'class' => 'success'],
-            'half'   => ['label' => __('Nửa ngày'),   'icon' => 'bi-circle-half','class' => 'info'],
-            'sunday' => ['label' => __('Chủ nhật'),   'icon' => 'bi-sun',        'class' => 'warning'],
-            'leave'  => ['label' => __('Có phép'),    'icon' => 'bi-bookmark',   'class' => 'secondary'],
-            'absent' => ['label' => __('Không phép'), 'icon' => 'bi-x-lg',       'class' => 'danger'],
+            'normal'      => ['label' => __('Đi làm'),         'icon' => 'bi-check-lg',    'class' => 'success'],
+            'half'        => ['label' => __('Nửa ngày'),       'icon' => 'bi-circle-half', 'class' => 'info'],
+            'sunday'      => ['label' => __('Chủ nhật'),       'icon' => 'bi-sun',         'class' => 'warning'],
+            'sunday_half' => ['label' => __('Chủ nhật ½'),     'icon' => 'bi-sun-fill',    'class' => 'info'],
+            'leave'       => ['label' => __('Có phép'),        'icon' => 'bi-bookmark',    'class' => 'secondary'],
+            'absent'      => ['label' => __('Không phép'),     'icon' => 'bi-x-lg',        'class' => 'danger'],
         ];
         $allowedKeys = $isSunday
-            ? ['sunday']
+            ? ['sunday', 'sunday_half']
             : ['normal', 'half', 'leave', 'absent'];
     @endphp
 
@@ -86,7 +88,7 @@
                 <tr>
                     <th style="width:48px">#</th>
                     <th>{{ __('Nhân viên') }}</th>
-                    <th style="min-width:{{ $isSunday ? '140' : '420' }}px">{{ __('Trạng thái') }}</th>
+                    <th style="min-width:{{ $isSunday ? '260' : '420' }}px">{{ __('Trạng thái') }}</th>
                     <th style="width:140px" class="num">{{ __('Tăng ca (ca 3h)') }}</th>
                 </tr>
             </thead>
@@ -106,16 +108,19 @@
                     <td>
                         <div class="btn-group" role="group" data-emp="{{ $emp->id }}">
                             @if ($isSunday)
-                                {{-- Sunday: single CHECKBOX toggle. Checked = mark Sunday shift, unchecked = no record (deletes on save). --}}
-                                @php $opt = $allOptions['sunday']; @endphp
-                                <input type="checkbox" class="btn-check"
-                                       name="rows[{{ $emp->id }}][type]"
-                                       id="r_{{ $emp->id }}_sunday"
-                                       value="sunday"
-                                       {{ $currentType === 'sunday' ? 'checked' : '' }}>
-                                <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_sunday">
-                                    <i class="bi {{ $opt['icon'] }}"></i> {{ $opt['label'] }}
-                                </label>
+                                {{-- Sunday: two CHECKBOX toggles (full / half). JS mutex (att-sunday-mutex)
+                                     unchecks the sibling when one is checked — DB still stores one type per day. --}}
+                                @foreach ($allowedKeys as $val)
+                                    @php $opt = $allOptions[$val]; @endphp
+                                    <input type="checkbox" class="btn-check"
+                                           name="rows[{{ $emp->id }}][type]"
+                                           id="r_{{ $emp->id }}_{{ $val }}"
+                                           value="{{ $val }}"
+                                           {{ $currentType === $val ? 'checked' : '' }}>
+                                    <label class="btn btn-outline-{{ $opt['class'] }} btn-sm" for="r_{{ $emp->id }}_{{ $val }}">
+                                        <i class="bi {{ $opt['icon'] }}"></i> {{ $opt['label'] }}
+                                    </label>
+                                @endforeach
                             @else
                                 @foreach ($allowedKeys as $val)
                                     @php $opt = $allOptions[$val]; @endphp
@@ -180,13 +185,27 @@
         const value = btn.dataset.value || '';
         document.querySelectorAll('[data-emp]').forEach(group => {
             const empId = group.dataset.emp;
-            // Sunday view uses a single checkbox; weekday view uses radios.
+            // Sunday view uses checkboxes; weekday view uses radios.
             // input.btn-check covers both kinds.
             group.querySelectorAll('input.btn-check').forEach(r => r.checked = false);
             if (value) {
                 const target = document.getElementById(`r_${empId}_${value}`);
                 if (target) target.checked = true;
             }
+        });
+    });
+
+    // Sunday view has TWO checkboxes (full / half) but the DB stores one type per day.
+    // When the user checks one, uncheck the sibling so the form submits a single value.
+    document.addEventListener('change', (e) => {
+        const cb = e.target;
+        if (!(cb instanceof HTMLInputElement)) return;
+        if (cb.type !== 'checkbox' || !cb.classList.contains('btn-check')) return;
+        if (!cb.checked) return;
+        const group = cb.closest('[data-emp]');
+        if (!group) return;
+        group.querySelectorAll('input[type=checkbox].btn-check').forEach(sib => {
+            if (sib !== cb) sib.checked = false;
         });
     });
 

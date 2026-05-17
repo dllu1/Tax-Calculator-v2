@@ -15,6 +15,7 @@ class Attendance extends Model
     public const TYPE_ABSENT = 'absent';
     public const TYPE_LEAVE = 'leave';
     public const TYPE_HALF = 'half';
+    public const TYPE_SUNDAY_HALF = 'sunday_half';
 
     protected $fillable = ['employee_id', 'work_date', 'type', 'note'];
 
