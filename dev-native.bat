@@ -32,6 +32,11 @@ if not exist "database\database.sqlite" type nul > "database\database.sqlite"
 echo  [+] Running SQLite migrations (auto-seed handled by NativeAppServiceProvider if DB is empty)
 php artisan migrate --force --no-interaction
 
+echo  [+] Running pending NativePHP migrations on database\nativephp.sqlite
+REM NativePHP uses its own SQLite (database/nativephp.sqlite) and only auto-migrates on first DB creation.
+REM Re-run native:migrate here so newly-added migrations land before the Electron window opens.
+php artisan native:migrate --force --no-interaction
+
 echo  [+] Starting NativePHP dev (Electron window will open)
 echo      Press Ctrl+C to stop. The original .env will be restored automatically.
 echo.
