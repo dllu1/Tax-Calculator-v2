@@ -168,6 +168,8 @@
                 <tr><td>{{ __('Lương sản phẩm') }}</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
                 <tr><td>{{ __('Chuyên cần') }}</td><td>{{ $fmt($payroll->diligence) }}</td></tr>
                 <tr><td>{{ __('Lương nửa ngày') }} <small class="text-muted">({{ $payroll->half_days ?? 0 }} {{ __('nửa ngày') }} × ½ {{ __('chuyên cần') }})</small></td><td>{{ $fmt($payroll->half_day_amount ?? 0) }}</td></tr>
+                <tr><td>{{ __('Thưởng Tết') }}</td><td>{{ $fmt($payroll->tet_bonus ?? 0) }}</td></tr>
+                <tr><td>{{ __('Lương phép năm') }}</td><td>{{ $fmt($payroll->annual_leave_pay ?? 0) }}</td></tr>
                 <tr><td>{{ __('Phụ cấp chịu thuế') }}</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
                 <tr><td>{{ __('Phụ cấp không chịu thuế') }}</td><td>{{ $fmt($payroll->non_taxable_allowances) }}</td></tr>
 
@@ -191,9 +193,12 @@
                 <span class="gz-label">{{ __('5 bậc lũy tiến') }}</span>
             </div>
             <table class="gz-ledger">
-                <tr><td>{{ __('Lương căn bản') }}</td><td>{{ $fmt($employee->basic_salary) }}</td></tr>
+                <tr><td>{{ __('Lương ngày công') }}</td><td>{{ $fmt($payroll->day_wage) }}</td></tr>
+                <tr><td>{{ __('+ Chuyên cần') }}</td><td>{{ $fmt($payroll->diligence) }}</td></tr>
                 <tr><td>{{ __('+ Lương sản phẩm') }}</td><td>{{ $fmt($payroll->product_salary) }}</td></tr>
                 <tr><td>{{ __('+ Phụ cấp chịu thuế') }}</td><td>{{ $fmt($payroll->taxable_allowances) }}</td></tr>
+                <tr><td>{{ __('+ Thưởng Tết') }}</td><td>{{ $fmt($payroll->tet_bonus ?? 0) }}</td></tr>
+                <tr><td>{{ __('+ Lương phép năm') }}</td><td>{{ $fmt($payroll->annual_leave_pay ?? 0) }}</td></tr>
                 <tr class="total"><td>{{ __('= Thu nhập tính thuế') }}</td><td>{{ $fmt($payroll->taxable_income) }}</td></tr>
 
                 <tr class="plus"><td>{{ __('− Giảm trừ bản thân') }}</td><td>{{ $fmt($payroll->personal_deduction) }}</td></tr>
@@ -460,6 +465,22 @@
                 <td></td>
                 <td></td>
                 <td class="num">{{ $fmt($payroll->half_day_amount) }}</td>
+            </tr>
+            @endif
+            @if (($payroll->tet_bonus ?? 0) > 0)
+            <tr>
+                <td>Thưởng Tết</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->tet_bonus) }}</td>
+            </tr>
+            @endif
+            @if (($payroll->annual_leave_pay ?? 0) > 0)
+            <tr>
+                <td>Lương phép năm</td>
+                <td></td>
+                <td></td>
+                <td class="num">{{ $fmt($payroll->annual_leave_pay) }}</td>
             </tr>
             @endif
             <tr class="strikethrough">

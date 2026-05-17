@@ -19,6 +19,8 @@ class Employee extends Model
         'basic_salary',
         'bhxh_salary',
         'diligence_bonus',
+        'tet_bonus',
+        'annual_leave_pay',
         'dependents',
         'is_active',
     ];
@@ -28,6 +30,8 @@ class Employee extends Model
         'basic_salary' => 'decimal:2',
         'bhxh_salary' => 'decimal:2',
         'diligence_bonus' => 'decimal:2',
+        'tet_bonus' => 'decimal:2',
+        'annual_leave_pay' => 'decimal:2',
         'dependents' => 'integer',
         'is_active' => 'boolean',
     ];

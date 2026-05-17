@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\EmployeesTemplateExport;
 use App\Imports\EmployeesImport;
 use App\Models\Allowance;
 use App\Models\Employee;
@@ -308,6 +307,8 @@ class EmployeeController extends Controller
             'basic_salary' => ['required', 'numeric', 'min:0'],
             'bhxh_salary' => ['required', 'numeric', 'min:0'],
             'diligence_bonus' => ['required', 'numeric', 'min:0'],
+            'tet_bonus' => ['nullable', 'numeric', 'min:0'],
+            'annual_leave_pay' => ['nullable', 'numeric', 'min:0'],
             'dependents' => ['required', 'integer', 'min:0', 'max:20'],
             'is_active' => ['nullable', 'boolean'],
         ]);

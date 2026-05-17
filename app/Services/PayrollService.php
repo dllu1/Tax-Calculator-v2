@@ -81,9 +81,9 @@ class PayrollService
         // Tăng ca theo hệ số cấu hình
         $overtimeWage = round($dailyRate * $overtimeMultiplier * $overtimeShifts, 0);
 
-        // Tiền ăn (theo ngày có mặt thực tế). Nửa ngày CN cũng được tính 1 suất cơm như half
-        // (đồng nhất với cách xử lý half-day thường — ăn đủ 1 bữa dù chỉ làm nửa ngày).
-        $mealShift = $mealPerDay * ($normalDays + $sundayDays + $halfDays + $sundayHalfDays);
+        // Tiền ăn giữa ca: chỉ áp dụng cho ngày đi làm CẢ NGÀY (normal + sunday).
+        // Nửa ngày (half + sunday_half) không có tiền ăn giữa ca — theo yêu cầu của user.
+        $mealShift = $mealPerDay * ($normalDays + $sundayDays);
         $mealOvertime = $mealPerOt * $overtimeShifts;
 
         // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). "leave", "half", "sunday_half" không phá chuyên cần.
@@ -94,14 +94,22 @@ class PayrollService
         // Lương nửa ngày: mỗi ngày half-day = chuyên cần / 2 (theo cấu hình của người dùng)
         $halfDayAmount = round($halfDays * ((float) $employee->diligence_bonus / 2), 0);
 
+        // Thưởng Tết & lương phép năm (cố định trên hồ sơ NV — user tự reset về 0 khi tháng
+        // đã trả xong nếu chỉ phát 1 lần/năm).
+        $tetBonus = (float) ($employee->tet_bonus ?? 0);
+        $annualLeavePay = (float) ($employee->annual_leave_pay ?? 0);
+
         // TỔNG THỰC NHẬN
         $totalIncome = $dayWage + $overtimeWage + $mealShift + $mealOvertime
             + $productSalary + $diligence + $halfDayAmount
+            + $tetBonus + $annualLeavePay
             + $taxableAllowances + $nonTaxableAllowances;
 
         // === THUẾ TNCN ===
-        // TN tính thuế = Lương căn bản + Lương SP + Phụ cấp chịu thuế
-        $taxableIncome = $basicSalary + $productSalary + $taxableAllowances;
+        // TN tính thuế = Lương ngày công (theo số ngày đi làm, KHÔNG phải lương căn bản)
+        //              + Chuyên cần + Lương SP + Phụ cấp chịu thuế + Thưởng Tết + Lương phép năm
+        $taxableIncome = $dayWage + $diligence + $productSalary + $taxableAllowances
+            + $tetBonus + $annualLeavePay;
 
         // Giảm trừ
         $personalDeduction = $this->tax->personalDeductionAmount();
@@ -135,7 +143,9 @@ class PayrollService
             $employee, $year, $month,
             $normalDays, $sundayDays, $sundayHalfDays, $absentDays, $halfDays, $overtimeShifts,
             $dayWage, $overtimeWage, $mealShift, $mealOvertime,
-            $productSalary, $diligence, $halfDayAmount, $taxableAllowances, $nonTaxableAllowances,
+            $productSalary, $diligence, $halfDayAmount,
+            $tetBonus, $annualLeavePay,
+            $taxableAllowances, $nonTaxableAllowances,
             $totalIncome, $taxableIncome, $personalDeduction, $dependentDeduction,
             $bhxhAmount, $assessableIncome, $pitAmount, $advance, $netSalary, $detail
         ) {
@@ -155,6 +165,8 @@ class PayrollService
                     'product_salary' => $productSalary,
                     'diligence' => $diligence,
                     'half_day_amount' => $halfDayAmount,
+                    'tet_bonus' => $tetBonus,
+                    'annual_leave_pay' => $annualLeavePay,
                     'taxable_allowances' => $taxableAllowances,
                     'non_taxable_allowances' => $nonTaxableAllowances,
                     'total_income' => $totalIncome,
