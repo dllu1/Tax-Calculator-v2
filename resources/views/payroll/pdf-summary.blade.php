@@ -93,24 +93,25 @@
         </tr>
     </thead>
     <tbody>
+    @php $numFmt = fn($n) => $n ? rtrim(rtrim(number_format((float)$n, 1, ',', '.'), '0'), ',') : ''; @endphp
     @foreach ($rows as $i => $row)
         @php $emp = $row['employee']; $p = $row['payroll']; @endphp
         <tr>
             <td class="ctr">{{ $i + 1 }}</td>
             <td class="ctr"><strong>{{ $emp->employee_code }}</strong></td>
             <td class="lbl">{{ $emp->full_name }}</td>
-            <td class="ctr">{{ rtrim(rtrim(number_format($row['work_days_total'], 1, ',', '.'), '0'), ',') }}</td>
-            <td class="num">{{ $fmt($p->day_wage) }}</td>
-            <td class="ctr">{{ $row['meal_days'] ?: '' }}</td>
-            <td class="num">{{ $fmt($p->meal_shift) }}</td>
+            <td class="ctr">{{ $numFmt($row['weekday_work_days']) }}</td>
+            <td class="num">{{ $fmt($row['weekday_day_wage']) }}</td>
+            <td class="ctr">{{ $row['weekday_meal_days'] ?: '' }}</td>
+            <td class="num">{{ $fmt($row['weekday_meal']) }}</td>
             <td class="ctr">{{ $row['ot_weekday_shifts'] ?: '' }}</td>
             <td class="num">{{ $fmt($row['ot_weekday_wage']) }}</td>
             <td class="ctr">{{ $row['ot_weekday_shifts'] ?: '' }}</td>
             <td class="num">{{ $fmt($row['ot_weekday_meal']) }}</td>
-            <td class="ctr">{{ $row['ot_sunday_shifts'] ?: '' }}</td>
-            <td class="num">{{ $fmt($row['ot_sunday_wage']) }}</td>
-            <td class="ctr">{{ $row['ot_sunday_shifts'] ?: '' }}</td>
-            <td class="num">{{ $fmt($row['ot_sunday_meal']) }}</td>
+            <td class="ctr">{{ $numFmt($row['sunday_work_days']) }}</td>
+            <td class="num">{{ $fmt($row['sunday_day_wage']) }}</td>
+            <td class="ctr">{{ $row['sunday_meal_shifts'] ?: '' }}</td>
+            <td class="num">{{ $fmt($row['sunday_meal']) }}</td>
             @forelse ($allowance_names as $name)
                 <td class="num">{{ $fmt($row['allowances_by_name'][$name] ?? 0) }}</td>
             @empty
@@ -139,18 +140,18 @@
     <tfoot>
         <tr>
             <td colspan="3" class="lbl">{{ __('TỔNG CỘNG') }}</td>
-            <td></td>
-            <td class="num">{{ $fmt($totals['day_wage']) }}</td>
-            <td></td>
-            <td class="num">{{ $fmt($totals['meal_shift']) }}</td>
+            <td class="ctr">{{ $numFmt($totals['weekday_work_days']) }}</td>
+            <td class="num">{{ $fmt($totals['weekday_day_wage']) }}</td>
+            <td class="ctr">{{ $totals['weekday_meal_days'] ?: '' }}</td>
+            <td class="num">{{ $fmt($totals['weekday_meal']) }}</td>
             <td class="ctr">{{ $totals['ot_weekday_shifts'] ?: '' }}</td>
             <td class="num">{{ $fmt($totals['ot_weekday_wage']) }}</td>
             <td class="ctr">{{ $totals['ot_weekday_shifts'] ?: '' }}</td>
             <td class="num">{{ $fmt($totals['ot_weekday_meal']) }}</td>
-            <td class="ctr">{{ $totals['ot_sunday_shifts'] ?: '' }}</td>
-            <td class="num">{{ $fmt($totals['ot_sunday_wage']) }}</td>
-            <td class="ctr">{{ $totals['ot_sunday_shifts'] ?: '' }}</td>
-            <td class="num">{{ $fmt($totals['ot_sunday_meal']) }}</td>
+            <td class="ctr">{{ $numFmt($totals['sunday_work_days']) }}</td>
+            <td class="num">{{ $fmt($totals['sunday_day_wage']) }}</td>
+            <td class="ctr">{{ $totals['sunday_meal_shifts'] ?: '' }}</td>
+            <td class="num">{{ $fmt($totals['sunday_meal']) }}</td>
             @forelse ($allowance_names as $name)
                 <td class="num">{{ $fmt($totals_by_allowance[$name] ?? 0) }}</td>
             @empty

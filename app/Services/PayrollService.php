@@ -210,8 +210,10 @@ class PayrollService
         $end = $start->copy()->endOfMonth();
 
         $standardDays = max(1, (int) $this->settings->number('payroll.standard_days', self::STANDARD_DAYS));
+        $mealPerDay = (float) $this->settings->number('payroll.meal_per_day', self::MEAL_PER_DAY);
         $mealPerOt = (float) $this->settings->number('payroll.meal_per_ot_shift', self::MEAL_PER_OT_SHIFT);
         $overtimeMultiplier = (float) $this->settings->number('payroll.overtime_multiplier', 0.5);
+        $sundayMultiplier = (float) $this->settings->number('payroll.sunday_multiplier', 2);
         $employerBhxhRate = 0.215;
 
         $employees = Employee::where('is_active', true)->orderBy('employee_code')->get();
@@ -234,9 +236,11 @@ class PayrollService
 
         $rows = [];
         $totals = array_fill_keys([
-            'day_wage', 'meal_shift',
+            'weekday_work_days', 'weekday_day_wage',
+            'weekday_meal_days', 'weekday_meal',
             'ot_weekday_shifts', 'ot_weekday_wage', 'ot_weekday_meal',
-            'ot_sunday_shifts', 'ot_sunday_wage', 'ot_sunday_meal',
+            'sunday_work_days', 'sunday_day_wage',
+            'sunday_meal_shifts', 'sunday_meal',
             'product_salary', 'tet_bonus', 'annual_leave_pay',
             'total_income', 'taxable_income',
             'bhxh_salary', 'employer_bhxh', 'bhxh_amount',
@@ -251,20 +255,31 @@ class PayrollService
 
             $dailyRate = (float) ($payroll->detail['daily_rate'] ?? ($emp->basic_salary / $standardDays));
 
-            // Split OT by weekday vs Sunday based on the work_date.
+            // Sum of OT shifts (Overtime table) by weekday vs Sunday based on the work_date.
             $empOts = $allOvertimes->get($emp->id, collect());
             $weekdayOtShifts = (int) $empOts->filter(fn ($o) => !$o->work_date->isSunday())->sum('shifts');
-            $sundayOtShifts = (int) $empOts->filter(fn ($o) => $o->work_date->isSunday())->sum('shifts');
-
             $weekdayOtWage = round($dailyRate * $overtimeMultiplier * $weekdayOtShifts, 0);
-            $sundayOtWage = round($dailyRate * $overtimeMultiplier * $sundayOtShifts, 0);
             $weekdayOtMeal = $mealPerOt * $weekdayOtShifts;
-            $sundayOtMeal = $mealPerOt * $sundayOtShifts;
 
-            // Total work days (đã quy đổi half = 0.5, sunday × multiplier, sunday_half × 0.5 × multiplier
-            // — đã tính sẵn trong PayrollService và lưu vào detail.total_work_days).
-            $workDaysTotal = (float) ($payroll->detail['total_work_days'] ?? 0);
-            $mealDays = (int) ($payroll->normal_days + $payroll->sunday_days);
+            // "Lương ngày" (col 4-5) = WEEKDAY regular work only: normal + half×0.5
+            $weekdayWorkDays = $payroll->normal_days + ($payroll->half_days * 0.5);
+            $weekdayDayWage = round($dailyRate * $weekdayWorkDays, 0);
+
+            // "Tiền ăn giữa ca" (col 6-7) = only normal weekday full days
+            // (half-day weekdays don't get meal per earlier user requirement).
+            $weekdayMealDays = (int) $payroll->normal_days;
+            $weekdayMealAmount = $mealPerDay * $weekdayMealDays;
+
+            // "Tăng ca chủ nhật" (col 12-13) = SUNDAY WORK (sunday + sunday_half×0.5),
+            // wage at × sunday_multiplier — Chủ nhật bản thân là "tăng ca".
+            $sundayWorkDays = $payroll->sunday_days + ($payroll->sunday_half_days * 0.5);
+            $sundayDayWage = round($dailyRate * $sundayWorkDays * $sundayMultiplier, 0);
+
+            // "Tiền ăn TC CN" (col 14-15) = mỗi ngày làm CN full = 1 suất ăn OT
+            // (cùng rate $mealPerOt với tăng ca thường — theo yêu cầu user).
+            // sunday_half không có cơm (giống half-day thường).
+            $sundayMealShifts = (int) $payroll->sunday_days;
+            $sundayMealAmount = $mealPerOt * $sundayMealShifts;
 
             // Per-allowance breakdown (non-taxable only).
             $allowancesByName = [];
@@ -283,28 +298,34 @@ class PayrollService
             $row = [
                 'employee' => $emp,
                 'payroll' => $payroll,
-                'work_days_total' => $workDaysTotal,
-                'meal_days' => $mealDays,
+                'weekday_work_days' => $weekdayWorkDays,
+                'weekday_day_wage' => $weekdayDayWage,
+                'weekday_meal_days' => $weekdayMealDays,
+                'weekday_meal' => $weekdayMealAmount,
                 'ot_weekday_shifts' => $weekdayOtShifts,
                 'ot_weekday_wage' => $weekdayOtWage,
                 'ot_weekday_meal' => $weekdayOtMeal,
-                'ot_sunday_shifts' => $sundayOtShifts,
-                'ot_sunday_wage' => $sundayOtWage,
-                'ot_sunday_meal' => $sundayOtMeal,
+                'sunday_work_days' => $sundayWorkDays,
+                'sunday_day_wage' => $sundayDayWage,
+                'sunday_meal_shifts' => $sundayMealShifts,
+                'sunday_meal' => $sundayMealAmount,
                 'allowances_by_name' => $allowancesByName,
                 'employer_bhxh' => $employerBhxh,
             ];
             $rows[] = $row;
 
             // Accumulate column totals
-            $totals['day_wage'] += (float) $payroll->day_wage;
-            $totals['meal_shift'] += (float) $payroll->meal_shift;
+            $totals['weekday_work_days'] += $weekdayWorkDays;
+            $totals['weekday_day_wage'] += $weekdayDayWage;
+            $totals['weekday_meal_days'] += $weekdayMealDays;
+            $totals['weekday_meal'] += $weekdayMealAmount;
             $totals['ot_weekday_shifts'] += $weekdayOtShifts;
             $totals['ot_weekday_wage'] += $weekdayOtWage;
             $totals['ot_weekday_meal'] += $weekdayOtMeal;
-            $totals['ot_sunday_shifts'] += $sundayOtShifts;
-            $totals['ot_sunday_wage'] += $sundayOtWage;
-            $totals['ot_sunday_meal'] += $sundayOtMeal;
+            $totals['sunday_work_days'] += $sundayWorkDays;
+            $totals['sunday_day_wage'] += $sundayDayWage;
+            $totals['sunday_meal_shifts'] += $sundayMealShifts;
+            $totals['sunday_meal'] += $sundayMealAmount;
             $totals['product_salary'] += (float) $payroll->product_salary;
             $totals['tet_bonus'] += (float) $payroll->tet_bonus;
             $totals['annual_leave_pay'] += (float) $payroll->annual_leave_pay;
