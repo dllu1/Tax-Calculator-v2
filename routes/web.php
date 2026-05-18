@@ -28,6 +28,12 @@ Route::post('/search', [HomeController::class, 'search'])->name('home.search');
 Route::get('/employees/template', [EmployeeController::class, 'template'])->name('employees.template');
 Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import');
 Route::post('/employees/import/commit', [EmployeeController::class, 'importCommit'])->name('employees.import.commit');
+Route::post('/employees/{employee}/personal-info', [EmployeeController::class, 'savePersonalInfo'])
+    ->name('employees.personal-info');
+Route::post('/employees/{employee}/dependents', [EmployeeController::class, 'saveDependent'])
+    ->name('employees.dependents.store');
+Route::delete('/dependents/{dependent}', [EmployeeController::class, 'deleteDependent'])
+    ->name('dependents.destroy');
 Route::resource('employees', EmployeeController::class)->except(['show']);
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');

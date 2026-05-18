@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Native\Laravel\Facades\Shell;
@@ -23,10 +24,11 @@ class PdfController extends Controller
         return $attendance->month($request);
     }
 
-    public function payrollSummary(int $year, int $month, Request $request, PayrollController $payroll)
+    public function payrollSummary(int $year, int $month, PayrollService $service)
     {
-        $request->merge(['year' => $year, 'month' => $month]);
-        return $payroll->index($request);
+        // Rich 35-col layout for the quarterly tax report — distinct from the screen view.
+        $report = $service->buildSummaryReport($year, $month);
+        return view('payroll.pdf-summary', $report);
     }
 
     public function payslip(Employee $employee, int $year, int $month, PayrollController $payroll)

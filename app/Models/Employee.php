@@ -16,6 +16,11 @@ class Employee extends Model
         'position',
         'department',
         'joined_date',
+        'dob',
+        'tax_code',
+        'id_card',
+        'phone',
+        'address',
         'basic_salary',
         'bhxh_salary',
         'diligence_bonus',
@@ -27,6 +32,7 @@ class Employee extends Model
 
     protected $casts = [
         'joined_date' => 'date',
+        'dob' => 'date',
         'basic_salary' => 'decimal:2',
         'bhxh_salary' => 'decimal:2',
         'diligence_bonus' => 'decimal:2',
@@ -64,5 +70,10 @@ class Employee extends Model
     public function payrolls(): HasMany
     {
         return $this->hasMany(Payroll::class);
+    }
+
+    public function dependentRecords(): HasMany
+    {
+        return $this->hasMany(Dependent::class);
     }
 }

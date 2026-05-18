@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\EmployeesImport;
 use App\Models\Allowance;
+use App\Models\Dependent;
 use App\Models\Employee;
 use App\Models\ProductSalary;
 use Illuminate\Http\Request;
@@ -41,6 +42,7 @@ class EmployeeController extends Controller
 
     public function edit(Employee $employee)
     {
+        $employee->load('dependentRecords');
         return view('employees.create', compact('employee'));
     }
 
@@ -309,8 +311,47 @@ class EmployeeController extends Controller
             'diligence_bonus' => ['required', 'numeric', 'min:0'],
             'tet_bonus' => ['nullable', 'numeric', 'min:0'],
             'annual_leave_pay' => ['nullable', 'numeric', 'min:0'],
-            'dependents' => ['required', 'integer', 'min:0', 'max:20'],
+            // 'dependents' bị bỏ ở đây — giờ tự động sync từ count(Dependent records) qua DependentObserver
             'is_active' => ['nullable', 'boolean'],
         ]);
+    }
+
+    public function savePersonalInfo(Request $request, Employee $employee)
+    {
+        $data = $request->validate([
+            'dob' => ['nullable', 'date'],
+            'tax_code' => ['nullable', 'string', 'max:20'],
+            'id_card' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:255'],
+        ]);
+        $employee->update($data);
+        return $this->respond($request, __('Đã lưu thông tin cá nhân'));
+    }
+
+    public function saveDependent(Request $request, Employee $employee)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'relationship' => ['nullable', 'string', 'max:60'],
+            'id_card' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+        ]);
+        Dependent::create($data + ['employee_id' => $employee->id]);
+        return $this->respond($request, __('Đã thêm người phụ thuộc'));
+    }
+
+    public function deleteDependent(Request $request, Dependent $dependent)
+    {
+        $dependent->delete();
+        return $this->respond($request, __('Đã xóa người phụ thuộc'));
+    }
+
+    private function respond(Request $request, string $message)
+    {
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $message]);
+        }
+        return back()->with('success', $message);
     }
 }
