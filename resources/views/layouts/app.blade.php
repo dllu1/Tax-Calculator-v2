@@ -1066,6 +1066,7 @@
             <li><a href="{{ route('employees.index') }}" class="{{ str_starts_with($rn, 'employees.') ? 'active' : '' }}">{{ __('Nhân Viên') }}</a></li>
             <li><a href="{{ route('attendance.index') }}" class="{{ str_starts_with($rn, 'attendance.') ? 'active' : '' }}">{{ __('Chấm Công') }}</a></li>
             <li><a href="{{ route('payroll.index') }}" class="{{ str_starts_with($rn, 'payroll.') ? 'active' : '' }}">{{ __('Bảng Lương') }}</a></li>
+            <li><a href="{{ route('settlement.index') }}" class="{{ str_starts_with($rn, 'settlement.') ? 'active' : '' }}">{{ __('Quyết Toán') }}</a></li>
             <li><a href="{{ route('settings.index') }}" class="{{ str_starts_with($rn, 'settings.') ? 'active' : '' }}">{{ __('Cấu Hình') }}</a></li>
             <li><a href="{{ route('help.index') }}" class="{{ str_starts_with($rn, 'help.') ? 'active' : '' }}">{{ __('Hướng Dẫn') }}</a></li>
         </ul>

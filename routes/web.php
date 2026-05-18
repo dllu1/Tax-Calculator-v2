@@ -9,6 +9,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SettlementController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -56,6 +57,11 @@ Route::post('/employees/{employee}/advance', [PayrollController::class, 'saveAdv
 Route::delete('/advance/{advance}', [PayrollController::class, 'deleteAdvance'])
     ->name('advance.destroy');
 
+Route::get('/settlement', [SettlementController::class, 'index'])->name('settlement.index');
+Route::get('/settlement/{period}', [SettlementController::class, 'show'])
+    ->whereIn('period', ['q1', 'q2', 'q3', 'q4', 'year'])
+    ->name('settlement.show');
+
 Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 Route::put('/settings/brackets', [SettingController::class, 'updateBrackets'])->name('settings.brackets.update');
@@ -76,5 +82,8 @@ Route::middleware('signed')->prefix('pdf/print')->name('pdf.print.')->group(func
         ->whereNumber(['year', 'month'])->name('payroll-summary');
     Route::get('/payslip/{employee}/{year}/{month}', [PdfController::class, 'payslip'])
         ->whereNumber(['year', 'month'])->name('payslip');
+    Route::get('/settlement/{period}/{year}', [PdfController::class, 'settlement'])
+        ->whereIn('period', ['q1', 'q2', 'q3', 'q4', 'year'])
+        ->whereNumber('year')->name('settlement');
 });
 Route::post('/pdf/open', [PdfController::class, 'openInBrowser'])->name('pdf.open');

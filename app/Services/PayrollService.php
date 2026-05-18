@@ -104,8 +104,10 @@ class PayrollService
 
         // Thưởng Tết & lương phép năm (cố định trên hồ sơ NV — user tự reset về 0 khi tháng
         // đã trả xong nếu chỉ phát 1 lần/năm).
-        $tetBonus = (float) ($employee->tet_bonus ?? 0);
-        $annualLeavePay = (float) ($employee->annual_leave_pay ?? 0);
+        // $tetBonus = (float) ($employee->tet_bonus ?? 0);
+        // $annualLeavePay = (float) ($employee->annual_leave_pay ?? 0);
+        $tetBonus = ($month === 1) ? (float) ($employee->tet_bonus ?? 0) : 0.0;
+        $annualLeavePay = ($month === 11) ? (float) ($employee->annual_leave_pay ?? 0) : 0.0; 
 
         // TỔNG THỰC NHẬN
         $totalIncome = $dayWage + $overtimeWage + $mealShift + $mealOvertime

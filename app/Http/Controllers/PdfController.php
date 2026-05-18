@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Services\PayrollService;
+use App\Services\SettlementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Native\Laravel\Facades\Shell;
@@ -36,6 +37,12 @@ class PdfController extends Controller
         return $payroll->show($employee, $year, $month);
     }
 
+    public function settlement(string $period, int $year, SettlementService $service)
+    {
+        $report = $service->build($period, $year);
+        return view('settlement.pdf', $report);
+    }
+
     /**
      * Click handler endpoint: validate payload, build a temporarily-signed URL
      * for the matching pdf.print.* route, hand it to Shell::openExternal so the
@@ -44,16 +51,24 @@ class PdfController extends Controller
     public function openInBrowser(Request $request)
     {
         $data = $request->validate([
-            'type'     => ['required', 'in:attendance-month,payroll-summary,payslip'],
+            'type'     => ['required', 'in:attendance-month,payroll-summary,payslip,settlement'],
             'year'     => ['required', 'integer', 'between:2000,2100'],
-            'month'    => ['required', 'integer', 'between:1,12'],
+            'month'    => ['nullable', 'integer', 'between:1,12'],
             'employee' => ['nullable', 'integer', 'exists:employees,id'],
+            'period'   => ['nullable', 'in:q1,q2,q3,q4,year'],
         ]);
 
-        $params = ['year' => $data['year'], 'month' => $data['month']];
-        if ($data['type'] === 'payslip') {
-            abort_if(empty($data['employee']), 422, 'Missing employee for payslip');
-            $params['employee'] = $data['employee'];
+        $params = ['year' => $data['year']];
+        if ($data['type'] === 'settlement') {
+            abort_if(empty($data['period']), 422, 'Missing period for settlement');
+            $params['period'] = $data['period'];
+        } else {
+            abort_if(empty($data['month']), 422, 'Missing month');
+            $params['month'] = $data['month'];
+            if ($data['type'] === 'payslip') {
+                abort_if(empty($data['employee']), 422, 'Missing employee for payslip');
+                $params['employee'] = $data['employee'];
+            }
         }
 
         $url = URL::temporarySignedRoute(

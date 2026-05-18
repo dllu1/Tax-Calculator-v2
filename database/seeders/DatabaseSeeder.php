@@ -16,32 +16,40 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $employees = [
-            ['employee_code' => 'NV001', 'full_name' => 'Nguyễn Văn An',    'position' => 'Công nhân SX',  'department' => 'Phân xưởng A', 'basic_salary' => 8_000_000,  'bhxh_salary' => 6_000_000,  'diligence_bonus' => 300_000,   'dependents' => 1, 'profile' => 'worker'],
-            ['employee_code' => 'NV002', 'full_name' => 'Trần Thị Bích',    'position' => 'Tổ trưởng',      'department' => 'Phân xưởng A', 'basic_salary' => 15_000_000, 'bhxh_salary' => 12_000_000, 'diligence_bonus' => 500_000,   'dependents' => 2, 'profile' => 'lead'],
-            ['employee_code' => 'NV003', 'full_name' => 'Lê Quốc Cường',    'position' => 'Quản đốc',       'department' => 'Phân xưởng B', 'basic_salary' => 25_000_000, 'bhxh_salary' => 20_000_000, 'diligence_bonus' => 1_000_000, 'dependents' => 0, 'profile' => 'manager'],
-            ['employee_code' => 'NV004', 'full_name' => 'Phạm Thu Dung',    'position' => 'Kế toán',        'department' => 'Văn phòng',    'basic_salary' => 12_000_000, 'bhxh_salary' => 10_000_000, 'diligence_bonus' => 500_000,   'dependents' => 1, 'profile' => 'office'],
-            ['employee_code' => 'NV005', 'full_name' => 'Hoàng Minh Đức',   'position' => 'Giám đốc',       'department' => 'Ban GĐ',        'basic_salary' => 50_000_000, 'bhxh_salary' => 40_000_000, 'diligence_bonus' => 2_000_000, 'dependents' => 2, 'profile' => 'director'],
-            ['employee_code' => 'NV006', 'full_name' => 'Vũ Thị Hà',        'position' => 'Công nhân SX',   'department' => 'Phân xưởng A', 'basic_salary' => 9_500_000,  'bhxh_salary' => 7_500_000,  'diligence_bonus' => 400_000,   'dependents' => 0, 'profile' => 'worker'],
-            ['employee_code' => 'NV007', 'full_name' => 'Đỗ Văn Khánh',     'position' => 'Công nhân SX',   'department' => 'Phân xưởng B', 'basic_salary' => 10_000_000, 'bhxh_salary' => 8_000_000,  'diligence_bonus' => 400_000,   'dependents' => 2, 'profile' => 'worker_absent'],
-            ['employee_code' => 'NV008', 'full_name' => 'Bùi Thị Lan',      'position' => 'Nhân viên QA',   'department' => 'Phân xưởng B', 'basic_salary' => 14_000_000, 'bhxh_salary' => 11_000_000, 'diligence_bonus' => 500_000,   'dependents' => 1, 'profile' => 'office'],
-            ['employee_code' => 'NV009', 'full_name' => 'Ngô Thanh Mai',    'position' => 'Nhân sự',        'department' => 'Văn phòng',    'basic_salary' => 13_500_000, 'bhxh_salary' => 11_000_000, 'diligence_bonus' => 500_000,   'dependents' => 3, 'profile' => 'office'],
-            ['employee_code' => 'NV010', 'full_name' => 'Trịnh Quang Phú',  'position' => 'Phó GĐ kinh doanh','department' => 'Ban GĐ',      'basic_salary' => 35_000_000, 'bhxh_salary' => 28_000_000, 'diligence_bonus' => 1_500_000, 'dependents' => 1, 'profile' => 'manager'],
+            ['employee_code' => 'NV001', 'full_name' => 'Nguyễn Văn An',    'position' => 'Công nhân SX',  'department' => 'Phân xưởng A', 'basic_salary' => 8_000_000,  'bhxh_salary' => 6_000_000,  'diligence_bonus' => 300_000,   'dependents' => 1, 'tax_code' => '0790780082980', 'profile' => 'worker'],
+            ['employee_code' => 'NV002', 'full_name' => 'Trần Thị Bích',    'position' => 'Tổ trưởng',      'department' => 'Phân xưởng A', 'basic_salary' => 15_000_000, 'bhxh_salary' => 12_000_000, 'diligence_bonus' => 500_000,   'dependents' => 2, 'tax_code' => '0791750097120', 'profile' => 'lead'],
+            ['employee_code' => 'NV003', 'full_name' => 'Lê Quốc Cường',    'position' => 'Quản đốc',       'department' => 'Phân xưởng B', 'basic_salary' => 25_000_000, 'bhxh_salary' => 20_000_000, 'diligence_bonus' => 1_000_000, 'dependents' => 0, 'tax_code' => '0790820349280', 'profile' => 'manager'],
+            ['employee_code' => 'NV004', 'full_name' => 'Phạm Thu Dung',    'position' => 'Kế toán',        'department' => 'Văn phòng',    'basic_salary' => 12_000_000, 'bhxh_salary' => 10_000_000, 'diligence_bonus' => 500_000,   'dependents' => 1, 'tax_code' => '0790780098610', 'profile' => 'office'],
+            ['employee_code' => 'NV005', 'full_name' => 'Hoàng Minh Đức',   'position' => 'Giám đốc',       'department' => 'Ban GĐ',        'basic_salary' => 50_000_000, 'bhxh_salary' => 40_000_000, 'diligence_bonus' => 2_000_000, 'dependents' => 2, 'tax_code' => '0790800230700', 'profile' => 'director'],
+            ['employee_code' => 'NV006', 'full_name' => 'Vũ Thị Hà',        'position' => 'Công nhân SX',   'department' => 'Phân xưởng A', 'basic_salary' => 9_500_000,  'bhxh_salary' => 7_500_000,  'diligence_bonus' => 400_000,   'dependents' => 0, 'tax_code' => '0791750352470', 'profile' => 'worker'],
+            ['employee_code' => 'NV007', 'full_name' => 'Đỗ Văn Khánh',     'position' => 'Công nhân SX',   'department' => 'Phân xưởng B', 'basic_salary' => 10_000_000, 'bhxh_salary' => 8_000_000,  'diligence_bonus' => 400_000,   'dependents' => 2, 'tax_code' => '0520910112770', 'profile' => 'worker_absent'],
+            ['employee_code' => 'NV008', 'full_name' => 'Bùi Thị Lan',      'position' => 'Nhân viên QA',   'department' => 'Phân xưởng B', 'basic_salary' => 14_000_000, 'bhxh_salary' => 11_000_000, 'diligence_bonus' => 500_000,   'dependents' => 1, 'tax_code' => '3011710097640', 'profile' => 'office'],
+            ['employee_code' => 'NV009', 'full_name' => 'Ngô Thanh Mai',    'position' => 'Nhân sự',        'department' => 'Văn phòng',    'basic_salary' => 13_500_000, 'bhxh_salary' => 11_000_000, 'diligence_bonus' => 500_000,   'dependents' => 3, 'tax_code' => '0721800017460', 'profile' => 'office'],
+            ['employee_code' => 'NV010', 'full_name' => 'Trịnh Quang Phú',  'position' => 'Phó GĐ kinh doanh','department' => 'Ban GĐ',      'basic_salary' => 35_000_000, 'bhxh_salary' => 28_000_000, 'diligence_bonus' => 1_500_000, 'dependents' => 1, 'tax_code' => '0842000058270', 'profile' => 'manager'],
         ];
 
         $today = now();
 
-        // Seed 2 tháng: tháng trước (để so sánh bảng lương) + tháng hiện tại.
-        $months = [
-            $today->copy()->subMonthNoOverflow()->startOfMonth(),
-            $today->copy()->startOfMonth(),
-        ];
+        // Phủ trọn 1 chu kỳ quyết toán: Tháng 12 năm trước → Tháng 11 năm nay.
+        // Như vậy cả 4 quý và bản quyết toán Cả năm đều có đủ dữ liệu để test.
+        // Mặc định "năm quyết toán" = năm hiện tại; nếu đang trong tháng 12 thì
+        // bắt đầu chu kỳ mới (Dec(curr) → Nov(next)).
+        $settlementYear = $today->month === 12 ? $today->year + 1 : $today->year;
+
+        $months = [];
+        // Tháng 12 năm trước
+        $months[] = Carbon::create($settlementYear - 1, 12, 1)->startOfMonth();
+        // Tháng 1 → 11 năm settlement
+        for ($m = 1; $m <= 11; $m++) {
+            $months[] = Carbon::create($settlementYear, $m, 1)->startOfMonth();
+        }
 
         foreach ($employees as $idx => $data) {
             $profile = $data['profile'];
             unset($data['profile']);
 
             $emp = Employee::create($data + [
-                'joined_date' => now()->subYears(2)->subMonths($idx),
+                'joined_date' => $today->copy()->subYears(2)->subMonths($idx),
                 'is_active'   => true,
             ]);
 
@@ -57,15 +65,16 @@ class DatabaseSeeder extends Seeder
         $month    = (int) $monthDate->month;
         $daysInMo = $monthDate->daysInMonth;
 
-        // Chỉ chấm công đến ngày hôm nay nếu là tháng hiện tại,
-        // tháng trước thì chấm công đủ cả tháng.
+        // Logic chấm công:
+        // - Tháng đã qua / tháng tương lai (cho quyết toán): chấm trọn tháng.
+        // - Tháng hiện tại: chỉ chấm tới ngày hôm nay.
         $isCurrentMonth = $monthDate->isSameMonth(now());
         $lastWorkDay    = $isCurrentMonth ? min(now()->day, $daysInMo) : $daysInMo;
 
-        // Chọn vài ngày đặc biệt theo profile để cover các trường hợp
+        // Ngày đặc biệt theo profile + tháng để có biến động giữa các kỳ:
         // - nửa ngày (half): 1-2 ngày
         // - nghỉ phép (leave): 1 ngày
-        // - nghỉ không phép (absent): chỉ NV007 (worker_absent) để minh hoạ tiền chuyên cần bị mất
+        // - nghỉ không phép (absent): chỉ NV007 (worker_absent)
         $halfDays   = $this->daysFor($profile, $monthDate, ['half_a', 'half_b']);
         $leaveDays  = $this->daysFor($profile, $monthDate, ['leave']);
         $absentDays = $profile === 'worker_absent' ? $this->daysFor($profile, $monthDate, ['absent']) : [];
@@ -161,8 +170,8 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Sinh các ngày trong tháng (1-28 để an toàn) cho profile + tag.
-     * Tạo deterministic theo employee_code để dữ liệu re-runnable.
+     * Sinh các ngày trong tháng (4-27 để an toàn) cho profile + tag.
+     * Tạo deterministic theo employee_code + tháng để dữ liệu re-runnable.
      */
     private function daysFor(string $profile, Carbon $monthDate, array $tags): array
     {

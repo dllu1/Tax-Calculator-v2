@@ -1,7 +1,18 @@
 @echo off
 REM ==========================================================
 REM  Niên Giám Lương — NativePHP dev mode (Electron + SQLite)
-REM  Swap .env to use SQLite, run native:serve, restore on exit.
+REM
+REM  IMPORTANT: NativePHP at runtime overrides DB_CONNECTION to
+REM  use database/nativephp.sqlite (see NativeServiceProvider::
+REM  rewriteDatabase). The DB_DATABASE in .env.nativephp is
+REM  IGNORED by the Electron window — so we must use
+REM  `native:migrate` / `native:migrate:fresh` (NOT plain
+REM  `migrate`) to target the actual app database.
+REM
+REM  Usage:
+REM    dev-native.bat         — start dev server (incremental migrate)
+REM    dev-native.bat fresh   — DROP all tables in nativephp.sqlite
+REM                             and re-seed sample data, then start
 REM ==========================================================
 chcp 65001 >NUL
 title Niên Giám Lương — NativePHP dev
@@ -26,16 +37,15 @@ copy /Y .env .env.bak >NUL
 echo  [+] Swapping to .env.nativephp (SQLite)
 copy /Y .env.nativephp .env >NUL
 
-echo  [+] Ensuring database/database.sqlite exists
-if not exist "database\database.sqlite" type nul > "database\database.sqlite"
-
-echo  [+] Running SQLite migrations (auto-seed handled by NativeAppServiceProvider if DB is empty)
-php artisan migrate --force --no-interaction
-
-echo  [+] Running pending NativePHP migrations on database\nativephp.sqlite
-REM NativePHP uses its own SQLite (database/nativephp.sqlite) and only auto-migrates on first DB creation.
-REM Re-run native:migrate here so newly-added migrations land before the Electron window opens.
-php artisan native:migrate --force --no-interaction
+if /I "%~1"=="fresh" (
+    echo  [+] FRESH mode: dropping all tables in database/nativephp.sqlite and re-seeding
+    php artisan native:migrate:fresh --seed --force --no-interaction
+) else (
+    echo  [+] Running NativePHP migrations on database/nativephp.sqlite
+    REM This is the database Electron actually reads at runtime.
+    REM (The auto-seed in NativeAppServiceProvider only runs when the DB is empty.)
+    php artisan native:migrate --force --no-interaction
+)
 
 echo  [+] Starting NativePHP dev (Electron window will open)
 echo      Press Ctrl+C to stop. The original .env will be restored automatically.
