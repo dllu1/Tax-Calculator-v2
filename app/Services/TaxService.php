@@ -57,7 +57,7 @@ class TaxService
             if ($isLast || $assessableIncome <= $limit) {
                 $tax = $assessableIncome * $rate - $deduction;
                 return [
-                    'tax' => max(0.0, round($tax, 0)),
+                    'tax' => max(0.0, $tax),
                     'rate' => $rate,
                     'deduction' => $deduction,
                 ];

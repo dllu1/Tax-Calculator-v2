@@ -104,6 +104,14 @@ class SettlementService
 
         $employees = Employee::orderBy('employee_code')->get();
 
+        // Biểu thuế lũy tiến trong cấu hình là biểu THÁNG. Khi quyết toán cho
+        // 1 kỳ nhiều tháng, áp dụng biểu trực tiếp lên tổng kỳ sẽ đẩy NV vào
+        // bậc cao hơn thực tế (vì 3 hoặc 12 lần thu nhập tháng vượt giới hạn
+        // bậc). Quy định nội bộ: chia thu nhập tính thuế cho số tháng trong
+        // kỳ (3 cho quý, 12 cho năm) để quy về thu nhập trung bình tháng rồi
+        // mới áp công thức lũy tiến.
+        $divisor = $period === 'year' ? 12 : 3;
+
         $rows = [];
         $totals = array_fill_keys([
             'total_income', 'bhxh_amount', 'taxable_income', 'family_deduction',
@@ -158,9 +166,10 @@ class SettlementService
             // "Thu nhập tính thuế TNCN" = "Thu nhập chịu thuế TNCN có BHXH" - BHXH - giảm trừ
             $assessableIncome = max(0.0, round($sumTaxableIncome - $sumBhxh - $sumFamilyDeduction, 0));
 
-            // "Thuế TNCN phải nộp" — biểu lũy tiến áp lên tổng kỳ.
-            $pit = $this->tax->calculatePIT($assessableIncome);
-            $pitPayable = (float) $pit['tax'];
+            // "Thuế TNCN phải nộp": chia thu nhập tính thuế cho số tháng trong
+            // kỳ trước khi áp biểu lũy tiến (xem ghi chú $divisor ở trên).
+            $pit = $this->tax->calculatePIT($assessableIncome / $divisor);
+            $pitPayable = (float) $pit['tax'] * $divisor;
 
             // "Số thuế phải hoàn lại" = đã trừ - phải nộp (chỉ hoàn nếu > 0)
             $refund = round($sumPitWithheld - $pitPayable, 0);
