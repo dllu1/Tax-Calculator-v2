@@ -49,11 +49,25 @@
                 <option value="{{ $m }}" @selected($m == $month)>{{ __('Tháng') }} {{ $m }}/{{ $year }}</option>
             @endfor
         </select>
+        <form method="POST"
+              action="{{ route('payroll.recalculate-one', [$employee->id, $year, $month]) }}"
+              data-ajax="true" data-soft-reload="true">
+            @csrf
+            <button class="btn btn-outline-primary btn-sm" type="submit">
+                <i class="bi bi-arrow-repeat"></i> {{ __('Tính Lại') }}
+            </button>
+        </form>
         <button type="button" class="btn btn-primary btn-sm"
                 onclick="exportPdf('payslip', {year: {{ $year }}, month: {{ $month }}, employee: {{ $employee->id }}})">
             <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}
         </button>
     </div>
+    @if (!empty($isStale))
+        <div class="alert alert-warning no-print mt-2 mb-0" style="padding:0.5rem 0.75rem; font-size:0.85rem;">
+            <i class="bi bi-info-circle"></i>
+            {{ __('Số liệu hiển thị chưa lưu — bấm "Tính Lại" để ghi vào báo cáo.') }}
+        </div>
+    @endif
 </div>
 
 {{-- ===================== KẾT QUẢ — FIGURE LỚN ===================== --}}

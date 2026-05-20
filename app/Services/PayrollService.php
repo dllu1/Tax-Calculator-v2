@@ -23,10 +23,78 @@ class PayrollService
     }
 
     /**
-     * Tính bảng lương cho 1 nhân viên trong tháng/năm
-     * và lưu vào bảng payrolls (upsert theo employee_id+year+month).
+     * Pure compute: returns a Payroll model instance populated with computed
+     * fields but NOT persisted. Safe to call from GET handlers.
+     *
+     * Use {@see recalculate()} from POST handlers when persistence is needed.
+     */
+    public function compute(Employee $employee, int $year, int $month): Payroll
+    {
+        $attrs = $this->computeAttributes($employee, $year, $month);
+
+        // Hydrate an in-memory Payroll (no insert). If a record already exists
+        // for (employee, year, month), preserve its id/timestamps so the caller
+        // can tell it apart from a brand-new one if needed.
+        $existing = Payroll::where([
+            'employee_id' => $employee->id,
+            'year' => $year,
+            'month' => $month,
+        ])->first();
+
+        $payroll = $existing ?: new Payroll();
+        $payroll->forceFill([
+            'employee_id' => $employee->id,
+            'year' => $year,
+            'month' => $month,
+        ] + $attrs);
+        $payroll->setRelation('employee', $employee);
+
+        return $payroll;
+    }
+
+    /**
+     * Read-only fetch: returns the stored Payroll for the given month or
+     * null if none exists. Does NOT calculate or write anything.
+     */
+    public function find(Employee $employee, int $year, int $month): ?Payroll
+    {
+        return Payroll::where([
+            'employee_id' => $employee->id,
+            'year' => $year,
+            'month' => $month,
+        ])->first();
+    }
+
+    /**
+     * Compute + persist (upsert) the payroll record for an employee/month.
+     * MUST only be called from POST handlers (it writes to the DB).
+     */
+    public function recalculate(Employee $employee, int $year, int $month): Payroll
+    {
+        $attrs = $this->computeAttributes($employee, $year, $month);
+
+        return DB::transaction(fn () => Payroll::updateOrCreate(
+            ['employee_id' => $employee->id, 'year' => $year, 'month' => $month],
+            $attrs,
+        ));
+    }
+
+    /**
+     * @deprecated Use {@see recalculate()} for POST writes or {@see compute()}
+     *             for read-only computation. Kept as an alias so older callers
+     *             keep working during the migration.
      */
     public function calculate(Employee $employee, int $year, int $month): Payroll
+    {
+        return $this->recalculate($employee, $year, $month);
+    }
+
+    /**
+     * Pure computation of payroll attributes — no DB writes.
+     *
+     * @return array<string, mixed>
+     */
+    private function computeAttributes(Employee $employee, int $year, int $month): array
     {
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = $start->copy()->endOfMonth();
@@ -157,49 +225,48 @@ class PayrollService
             ],
         ];
 
-        return DB::transaction(function () use (
-            $employee, $year, $month,
-            $normalDays, $sundayDays, $sundayHalfDays, $absentDays, $halfDays, $overtimeShifts,
-            $dayWage, $overtimeWage, $mealShift, $mealOvertime,
-            $productSalary, $diligence, $halfDayAmount,
-            $tetBonus, $annualLeavePay,
-            $taxableAllowances, $nonTaxableAllowances,
-            $totalIncome, $taxableIncome, $personalDeduction, $dependentDeduction,
-            $bhxhAmount, $assessableIncome, $pitAmount, $advance, $netSalary, $detail
-        ) {
-            return Payroll::updateOrCreate(
-                ['employee_id' => $employee->id, 'year' => $year, 'month' => $month],
-                [
-                    'normal_days' => $normalDays,
-                    'sunday_days' => $sundayDays,
-                    'sunday_half_days' => $sundayHalfDays,
-                    'absent_days' => $absentDays,
-                    'half_days' => $halfDays,
-                    'overtime_shifts' => $overtimeShifts,
-                    'day_wage' => $dayWage,
-                    'overtime_wage' => $overtimeWage,
-                    'meal_shift' => $mealShift,
-                    'meal_overtime' => $mealOvertime,
-                    'product_salary' => $productSalary,
-                    'diligence' => $diligence,
-                    'half_day_amount' => $halfDayAmount,
-                    'tet_bonus' => $tetBonus,
-                    'annual_leave_pay' => $annualLeavePay,
-                    'taxable_allowances' => $taxableAllowances,
-                    'non_taxable_allowances' => $nonTaxableAllowances,
-                    'total_income' => $totalIncome,
-                    'taxable_income' => $taxableIncome,
-                    'personal_deduction' => $personalDeduction,
-                    'dependent_deduction' => $dependentDeduction,
-                    'bhxh_amount' => $bhxhAmount,
-                    'assessable_income' => $assessableIncome,
-                    'pit_amount' => $pitAmount,
-                    'advance' => $advance,
-                    'net_salary' => $netSalary,
-                    'detail' => $detail,
-                ]
-            );
-        });
+        return [
+            'normal_days' => $normalDays,
+            'sunday_days' => $sundayDays,
+            'sunday_half_days' => $sundayHalfDays,
+            'absent_days' => $absentDays,
+            'half_days' => $halfDays,
+            'overtime_shifts' => $overtimeShifts,
+            'day_wage' => $dayWage,
+            'overtime_wage' => $overtimeWage,
+            'meal_shift' => $mealShift,
+            'meal_overtime' => $mealOvertime,
+            'product_salary' => $productSalary,
+            'diligence' => $diligence,
+            'half_day_amount' => $halfDayAmount,
+            'tet_bonus' => $tetBonus,
+            'annual_leave_pay' => $annualLeavePay,
+            'taxable_allowances' => $taxableAllowances,
+            'non_taxable_allowances' => $nonTaxableAllowances,
+            'total_income' => $totalIncome,
+            'taxable_income' => $taxableIncome,
+            'personal_deduction' => $personalDeduction,
+            'dependent_deduction' => $dependentDeduction,
+            'bhxh_amount' => $bhxhAmount,
+            'assessable_income' => $assessableIncome,
+            'pit_amount' => $pitAmount,
+            'advance' => $advance,
+            'net_salary' => $netSalary,
+            'detail' => $detail,
+        ];
+    }
+
+    /**
+     * Bulk-recalculate all active employees for a month. POST-only.
+     * @return int number of payroll rows written.
+     */
+    public function recalculateMonth(int $year, int $month): int
+    {
+        $employees = Employee::where('is_active', true)->orderBy('employee_code')->get();
+        foreach ($employees as $employee) {
+            $this->recalculate($employee, $year, $month);
+        }
+        return $employees->count();
     }
 
     /**
@@ -260,8 +327,9 @@ class PayrollService
         $totalsByAllowance = array_fill_keys($allowanceNames, 0.0);
 
         foreach ($employees as $emp) {
-            // Run the calculation (also persists the Payroll row — keeps DB & PDF in sync).
-            $payroll = $this->calculate($emp, $year, $month);
+            // Read-only: prefer stored payroll, fall back to in-memory compute
+            // so the report still works if the user hasn't pressed "Tính lại".
+            $payroll = $this->find($emp, $year, $month) ?? $this->compute($emp, $year, $month);
 
             // Lương cơ bản có hiệu lực ở tháng đang in báo cáo (tôn trọng salary_changes).
             $effective = $emp->effectiveSalary($year, $month);

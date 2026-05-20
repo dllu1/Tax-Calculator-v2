@@ -94,6 +94,7 @@ class SettingService
 
     /**
      * Đảm bảo DB có đầy đủ các setting mặc định (tạo nếu thiếu).
+     * MUST only be called from POST handlers (writes to DB).
      */
     public function ensureDefaults(): void
     {
@@ -112,13 +113,34 @@ class SettingService
         $this->clearCache();
     }
 
+    /**
+     * Read-only: returns settings, merging DB rows on top of in-memory defaults.
+     * Safe to call from GET handlers — does NOT write to DB.
+     */
     public function all(): array
     {
         return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            $this->ensureDefaults();
-            $rows = Setting::all();
+            // Start from defaults so GET handlers don't need to materialize
+            // settings rows before reading them.
             $map = [];
-            foreach ($rows as $row) {
+            foreach (self::defaults() as $key => $config) {
+                $value = $config['value'];
+                if ($config['type'] === Setting::TYPE_JSON) {
+                    $decoded = json_decode((string) $value, true);
+                    $value = is_array($decoded) ? $decoded : [];
+                } elseif ($config['type'] === Setting::TYPE_NUMBER) {
+                    $value = is_numeric($value) ? (float) $value : 0.0;
+                }
+                $map[$key] = [
+                    'value' => $value,
+                    'type' => $config['type'],
+                    'group' => $config['group'],
+                    'label' => $config['label'],
+                    'description' => $config['description'],
+                ];
+            }
+
+            foreach (Setting::all() as $row) {
                 $map[$row->key] = [
                     'value' => $row->decoded_value,
                     'type' => $row->type,
@@ -181,5 +203,38 @@ class SettingService
     {
         $this->ensureDefaults();
         return Setting::orderBy('group')->orderBy('id')->get()->groupBy('group')->toArray();
+    }
+
+    /**
+     * Read-only: returns Setting model instances for view rendering, merging
+     * persisted rows on top of in-memory defaults. Rows that don't yet exist
+     * in DB are returned as unsaved Setting instances (id=null). Safe for GET.
+     *
+     * @return \Illuminate\Support\Collection<int, Setting>
+     */
+    public function settingsForView(?string $group = null): \Illuminate\Support\Collection
+    {
+        $stored = Setting::all()->keyBy('key');
+
+        $rows = collect();
+        foreach (self::defaults() as $key => $config) {
+            if ($group !== null && $config['group'] !== $group) {
+                continue;
+            }
+            if ($stored->has($key)) {
+                $rows->push($stored->get($key));
+                continue;
+            }
+            $row = new Setting([
+                'key' => $key,
+                'value' => (string) $config['value'],
+                'type' => $config['type'],
+                'group' => $config['group'],
+                'label' => $config['label'],
+                'description' => $config['description'],
+            ]);
+            $rows->push($row);
+        }
+        return $rows;
     }
 }

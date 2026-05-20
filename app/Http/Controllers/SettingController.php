@@ -14,10 +14,11 @@ class SettingController extends Controller
 
     public function index()
     {
-        $this->settings->ensureDefaults();
-
-        $tax = Setting::where('group', Setting::GROUP_TAX)->orderBy('id')->get();
-        $payroll = Setting::where('group', Setting::GROUP_PAYROLL)->orderBy('id')->get();
+        // Read-only: merge defaults in-memory so missing rows don't trigger
+        // a DB write on GET. Defaults get persisted only by POST handlers
+        // (update / brackets.update / reset).
+        $tax = $this->settings->settingsForView(Setting::GROUP_TAX);
+        $payroll = $this->settings->settingsForView(Setting::GROUP_PAYROLL);
 
         $brackets = $this->settings->brackets();
 
@@ -33,6 +34,9 @@ class SettingController extends Controller
             'settings' => ['required', 'array'],
             'settings.*' => ['nullable'],
         ]);
+
+        // POST handler: materialize any missing default rows before writing.
+        $this->settings->ensureDefaults();
 
         foreach ($data['settings'] as $key => $value) {
             $setting = Setting::where('key', $key)->first();
@@ -81,6 +85,8 @@ class SettingController extends Controller
             return $a['limit'] <=> $b['limit'];
         });
 
+        // POST handler: materialize default rows before writing.
+        $this->settings->ensureDefaults();
         $this->settings->set('tax.brackets', $brackets);
 
         $msg = __('Đã cập nhật biểu thuế lũy tiến.');
@@ -97,6 +103,9 @@ class SettingController extends Controller
      */
     public function reset(Request $request)
     {
+        // Ensure all default rows exist, then overwrite their values.
+        $this->settings->ensureDefaults();
+
         foreach (SettingService::defaults() as $key => $config) {
             $setting = Setting::where('key', $key)->first();
             if (!$setting) {

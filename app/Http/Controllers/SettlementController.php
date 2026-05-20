@@ -30,6 +30,29 @@ class SettlementController extends Controller
     }
 
     /**
+     * POST: recalculate (and persist) every (employee × month) in this period.
+     */
+    public function recalculate(string $period, Request $request)
+    {
+        abort_unless(in_array($period, SettlementService::PERIODS, true), 404);
+        $year = (int) $request->input('year', $this->defaultYear());
+
+        $count = $this->service->recalculatePeriod($period, $year);
+
+        $msg = __('Đã tính lại quyết toán :p/:y (:n bản ghi).', [
+            'p' => strtoupper($period), 'y' => $year, 'n' => $count,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true, 'message' => $msg]);
+        }
+
+        return redirect()
+            ->route('settlement.show', ['period' => $period, 'year' => $year])
+            ->with('success', $msg);
+    }
+
+    /**
      * Năm mặc định = năm hiện tại; nếu đang là tháng 12 thì là năm sau
      * (vì quyết toán Q1 năm sau bắt đầu ngay từ tháng 12 năm nay).
      */

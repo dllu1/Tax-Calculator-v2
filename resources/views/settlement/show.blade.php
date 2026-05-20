@@ -39,6 +39,14 @@
         <a href="{{ route('settlement.index', ['year' => $year]) }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> {{ __('Quay lại') }}
         </a>
+        <form method="POST" action="{{ route('settlement.recalculate', $period) }}"
+              data-ajax="true" data-soft-reload="true">
+            @csrf
+            <input type="hidden" name="year" value="{{ $year }}">
+            <button class="btn btn-sm btn-outline-primary" type="submit">
+                <i class="bi bi-arrow-repeat"></i> {{ __('Tính Lại') }}
+            </button>
+        </form>
         <button type="button" class="btn btn-sm btn-primary"
                 onclick="exportPdf('settlement', {year: {{ $year }}, period: '{{ $period }}'})">
             <i class="bi bi-file-earmark-pdf"></i> {{ __('Xuất PDF') }}

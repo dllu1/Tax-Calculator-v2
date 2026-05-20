@@ -120,7 +120,15 @@
                 @endfor
             </select>
             <input type="number" name="year" class="form-control form-control-sm" value="{{ $year }}" style="width:90px">
-            <button class="btn btn-sm btn-outline-primary">{{ __('Tính Lại') }}</button>
+            <button class="btn btn-sm btn-outline-secondary">{{ __('Xem') }}</button>
+        </form>
+        <form method="POST" action="{{ route('payroll.recalculate') }}" data-ajax="true" data-soft-reload="true">
+            @csrf
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="month" value="{{ $month }}">
+            <button class="btn btn-sm btn-outline-primary" type="submit">
+                <i class="bi bi-arrow-repeat"></i> {{ __('Tính Lại') }}
+            </button>
         </form>
         <button type="button" class="btn btn-sm btn-primary"
                 onclick="exportPdf('payroll-summary', {year: {{ $year }}, month: {{ $month }}})">

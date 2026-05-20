@@ -27,6 +27,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/search', [HomeController::class, 'search'])->name('home.search');
 
 Route::get('/employees/template', [EmployeeController::class, 'template'])->name('employees.template');
+Route::post('/employees/template/open', [EmployeeController::class, 'openTemplate'])
+    ->name('employees.template.open');
 Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import');
 Route::post('/employees/import/commit', [EmployeeController::class, 'importCommit'])->name('employees.import.commit');
 Route::post('/employees/{employee}/personal-info', [EmployeeController::class, 'savePersonalInfo'])
@@ -50,6 +52,13 @@ Route::get('/payroll/{employee}/{year}/{month}', [PayrollController::class, 'sho
     ->name('payroll.show')
     ->whereNumber(['year', 'month']);
 
+// Persisting actions: tách rời khỏi GET để GET tuyệt đối read-only.
+Route::post('/payroll/recalculate', [PayrollController::class, 'recalculate'])
+    ->name('payroll.recalculate');
+Route::post('/payroll/{employee}/{year}/{month}/recalculate', [PayrollController::class, 'recalculateOne'])
+    ->whereNumber(['year', 'month'])
+    ->name('payroll.recalculate-one');
+
 Route::post('/employees/{employee}/product-salary', [PayrollController::class, 'saveProductSalary'])
     ->name('product-salary.store');
 Route::post('/employees/{employee}/allowance', [PayrollController::class, 'saveAllowance'])
@@ -65,6 +74,9 @@ Route::get('/settlement', [SettlementController::class, 'index'])->name('settlem
 Route::get('/settlement/{period}', [SettlementController::class, 'show'])
     ->whereIn('period', ['q1', 'q2', 'q3', 'q4', 'year'])
     ->name('settlement.show');
+Route::post('/settlement/{period}/recalculate', [SettlementController::class, 'recalculate'])
+    ->whereIn('period', ['q1', 'q2', 'q3', 'q4', 'year'])
+    ->name('settlement.recalculate');
 
 Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
 Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');

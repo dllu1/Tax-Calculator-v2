@@ -70,48 +70,69 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('success', $msg);
     }
 
+    /**
+     * GET: read-only direct download of the Excel template file. The Electron
+     * "copy to Downloads + open with OS" side-effect lives in {@see openTemplate()}
+     * which is invoked via POST so it doesn't fire on accidental GETs.
+     */
     public function template(Request $request)
     {
-        // The template is pre-built into resources/templates/employees-template.xlsx
-        // by `php artisan app:rebuild-template` (which needs XMLWriter — NativePHP's
-        // static-php-cli build is missing that extension, so we can't generate at
-        // runtime inside the Electron app). Lives under resource_path() rather than
-        // storage_path() because NativePHP rewrites storage_path() to a user-data
-        // directory that the project's static file does NOT get copied into.
-        $staticPath = resource_path('templates/employees-template.xlsx');
+        $staticPath = $this->templatePath();
+        if (!$staticPath) {
+            abort(500, 'Template file missing. Run: C:\\xampp\\php\\php.exe artisan app:rebuild-template');
+        }
+        return response()->download($staticPath, 'nien-giam-luong--mau-import-nhan-vien.xlsx');
+    }
 
-        if (!file_exists($staticPath)) {
+    /**
+     * POST: Electron flow — copy the static template to the user's Downloads
+     * folder and open it with the OS default app (Excel) via Shell::openFile.
+     * Has filesystem side-effects, so it must be invoked via POST (with CSRF).
+     */
+    public function openTemplate(Request $request)
+    {
+        $staticPath = $this->templatePath();
+        if (!$staticPath) {
             $msg = 'Template file missing. Run: C:\\xampp\\php\\php.exe artisan app:rebuild-template';
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['ok' => false, 'message' => $msg], 500);
             }
-            abort(500, $msg);
+            return back()->with('error', $msg);
         }
 
-        // Electron flow: BrowserWindow doesn't honor Content-Disposition: attachment,
-        // so copy the static template to the user's Downloads folder and open it with
-        // the system default app (Excel) via Shell::openFile.
+        $home = $_SERVER['USERPROFILE'] ?? $_SERVER['HOME'] ?? sys_get_temp_dir();
+        $dir = is_dir($home . DIRECTORY_SEPARATOR . 'Downloads')
+            ? $home . DIRECTORY_SEPARATOR . 'Downloads'
+            : $home;
+
+        $filename = 'mau-import-nhan-vien-' . now()->format('Ymd-His') . '.xlsx';
+        $absPath = $dir . DIRECTORY_SEPARATOR . $filename;
+        copy($staticPath, $absPath);
+
+        try {
+            Shell::openFile($absPath);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
-            $home = $_SERVER['USERPROFILE'] ?? $_SERVER['HOME'] ?? sys_get_temp_dir();
-            $dir = is_dir($home . DIRECTORY_SEPARATOR . 'Downloads')
-                ? $home . DIRECTORY_SEPARATOR . 'Downloads'
-                : $home;
-
-            $filename = 'mau-import-nhan-vien-' . now()->format('Ymd-His') . '.xlsx';
-            $absPath = $dir . DIRECTORY_SEPARATOR . $filename;
-            copy($staticPath, $absPath);
-
-            try {
-                Shell::openFile($absPath);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-
             return response()->json(['ok' => true, 'path' => $absPath]);
         }
+        return back()->with('success', __('Đã mở file mẫu trong Excel'));
+    }
 
-        // Browser fallback (`php artisan serve` outside Electron): direct download.
-        return response()->download($staticPath, 'nien-giam-luong--mau-import-nhan-vien.xlsx');
+    /**
+     * The template is pre-built into resources/templates/employees-template.xlsx
+     * by `php artisan app:rebuild-template` (which needs XMLWriter — NativePHP's
+     * static-php-cli build is missing that extension, so we can't generate at
+     * runtime inside the Electron app). Lives under resource_path() rather than
+     * storage_path() because NativePHP rewrites storage_path() to a user-data
+     * directory that the project's static file does NOT get copied into.
+     */
+    private function templatePath(): ?string
+    {
+        $staticPath = resource_path('templates/employees-template.xlsx');
+        return file_exists($staticPath) ? $staticPath : null;
     }
 
     /**

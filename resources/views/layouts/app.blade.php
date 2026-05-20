@@ -1300,7 +1300,9 @@
     // BrowserWindow. Server writes the file to ~/Downloads then Shell::openFile launches it.
     window.openInSystem = async function (url) {
         try {
-            const res = await GZ.fetchJson(url, { method: 'GET' });
+            // Has filesystem side-effects (copy file → Downloads, Shell::openFile);
+            // must use POST so it never fires on accidental link navigation.
+            const res = await GZ.fetchJson(url, { method: 'POST' });
             const okMsg = res && res.path
                 ? {!! json_encode(__('Đã lưu vào'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!} + ' ' + res.path
                 : {!! json_encode(__('Đã mở file trong ứng dụng mặc định'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};

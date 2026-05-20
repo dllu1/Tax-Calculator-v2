@@ -16,7 +16,7 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <button type="button" class="btn btn-outline-secondary"
-                onclick="openInSystem('{{ route('employees.template') }}')">
+                onclick="openInSystem('{{ route('employees.template.open') }}')">
             <i class="bi bi-file-earmark-arrow-down"></i> {{ __('Tải File Mẫu') }}
         </button>
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">

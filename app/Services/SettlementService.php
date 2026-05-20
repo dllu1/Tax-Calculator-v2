@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Employee;
-use App\Models\Payroll;
 use Carbon\Carbon;
 
 /**
@@ -33,6 +32,26 @@ class SettlementService
      *
      * @return array<int, array{year:int, month:int}>
      */
+    /**
+     * Persist Payroll rows for every (active employee × month) in this period.
+     * POST-only — called from {@see \App\Http\Controllers\SettlementController::recalculate()}.
+     *
+     * @return int Number of payroll rows written.
+     */
+    public function recalculatePeriod(string $period, int $year): int
+    {
+        $months = $this->periodMonths($period, $year);
+        $employees = Employee::where('is_active', true)->get();
+        $count = 0;
+        foreach ($employees as $emp) {
+            foreach ($months as $ym) {
+                $this->payroll->recalculate($emp, $ym['year'], $ym['month']);
+                $count++;
+            }
+        }
+        return $count;
+    }
+
     public function periodMonths(string $period, int $year): array
     {
         return match ($period) {
@@ -129,19 +148,12 @@ class SettlementService
             $hasAnyPayroll = false;
 
             foreach ($months as $ym) {
-                // NV đang hoạt động: LUÔN gọi calculate() để tự cập nhật theo
-                // settings hiện hành (giảm trừ gia cảnh, tỉ lệ BHXH, biểu thuế…).
-                // Nếu chỉ đọc Payroll record sẵn có, các thay đổi cấu hình sẽ
-                // không phản ánh và dẫn đến sai số thuế ở quyết toán.
-                // NV đã nghỉ: chỉ đọc record có sẵn, không tạo mới.
-                if ($emp->is_active) {
-                    $payroll = $this->payroll->calculate($emp, $ym['year'], $ym['month']);
-                } else {
-                    $payroll = Payroll::where([
-                        'employee_id' => $emp->id,
-                        'year' => $ym['year'],
-                        'month' => $ym['month'],
-                    ])->first();
+                // Read-only: prefer stored payroll, fall back to in-memory
+                // compute (so live config changes still show up on the report).
+                // Persisting happens only via POST /settlement/{period}/recalculate.
+                $payroll = $this->payroll->find($emp, $ym['year'], $ym['month']);
+                if (!$payroll && $emp->is_active) {
+                    $payroll = $this->payroll->compute($emp, $ym['year'], $ym['month']);
                 }
 
                 if (!$payroll) {
