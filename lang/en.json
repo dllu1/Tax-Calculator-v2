@@ -397,5 +397,21 @@
     "Bản in tối giản — bấm Ctrl+P để in/lưu PDF (khuyến nghị A3 landscape).": "Minimal print layout — press Ctrl+P to print/save PDF (A3 landscape recommended).",
     "In ngay": "Print now",
     "Chưa có dữ liệu quyết toán cho kỳ này": "No settlement data for this period",
-    "Tổng cộng": "Total"
+    "Tổng cộng": "Total",
+
+    "Lịch Sử Lương": "Salary History",
+    "Thêm Đợt Thay Đổi Lương": "Add Salary Change",
+    "Khi tăng lương từ một tháng cụ thể, hãy thêm đợt thay đổi ở đây thay vì sửa trực tiếp lương cơ bản trên tab Hồ Sơ Lương. Các tháng TRƯỚC tháng hiệu lực giữ nguyên mức lương cũ; các tháng từ tháng hiệu lực trở về sau sẽ dùng mức mới.": "To raise salary effective from a specific month, add a salary change here instead of editing the base salary directly. Months BEFORE the effective month keep the previous rate; months from the effective month onward use the new rate.",
+    "Tháng hiệu lực": "Effective month",
+    "Năm": "Year",
+    "Mức BHXH": "SI base",
+    "Chuyên cần": "Diligence",
+    "Giữ nguyên": "Keep current",
+    "VD: Tăng lương theo nghị quyết tháng 6": "e.g. Raise per June resolution",
+    "Hiệu lực từ": "Effective from",
+    "Xóa đợt thay đổi lương": "Delete salary change",
+    "Chưa có đợt thay đổi lương — đang dùng mức lương trên tab Hồ Sơ Lương cho mọi tháng.": "No salary changes — using the base salary from the Salary tab for every month.",
+    "Sau khi thêm/xóa, các bảng lương từ tháng hiệu lực trở về sau sẽ tự tính lại ở lần xem kế tiếp.": "After adding/removing, payrolls from the effective month onward will auto-recalculate on next view.",
+    "Đã lưu đợt thay đổi lương": "Salary change saved",
+    "Đã xóa đợt thay đổi lương": "Salary change deleted"
 }

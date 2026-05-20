@@ -71,8 +71,16 @@ class PayrollService
             ->where(['year' => $year, 'month' => $month])
             ->sum('amount'));
 
+        // Mức lương có hiệu lực tại tháng đang tính (xem Employee::effectiveSalary).
+        // Mọi SalaryChange với (effective_year, effective_month) ≤ kỳ này
+        // được áp dụng — tháng trước đợt thay đổi đầu tiên dùng giá trị gốc
+        // trên Employee. Đảm bảo các tháng cũ không bị thay đổi khi tăng lương.
+        $effective = $employee->effectiveSalary($year, $month);
+        $basicSalary = $effective['basic_salary'];
+        $effectiveBhxhSalary = $effective['bhxh_salary'];
+        $effectiveDiligenceBonus = $effective['diligence_bonus'];
+
         // Lương ngày
-        $basicSalary = (float) $employee->basic_salary;
         $dailyRate = $standardDays > 0 ? $basicSalary / $standardDays : 0;
         // Tổng công quy đổi:
         //   - Ngày thường: 1 công/ngày
@@ -95,7 +103,7 @@ class PayrollService
 
         // Chuyên cần: chỉ trả nếu không nghỉ ngày nào (absent=0). "leave", "half", "sunday_half" không phá chuyên cần.
         $diligence = $absentDays === 0 && ($normalDays + $sundayDays + $halfDays + $sundayHalfDays) > 0
-            ? (float) $employee->diligence_bonus
+            ? $effectiveDiligenceBonus
             : 0.0;
 
         // Lương nửa ngày đã được cộng vào $dayWage qua $totalWorkDays (halfDays × 0.5).
@@ -124,7 +132,7 @@ class PayrollService
         // Giảm trừ
         $personalDeduction = $this->tax->personalDeductionAmount();
         $dependentDeduction = $employee->dependents * $this->tax->dependentDeductionAmount();
-        $bhxhAmount = $this->tax->bhxhAmount((float) $employee->bhxh_salary);
+        $bhxhAmount = $this->tax->bhxhAmount($effectiveBhxhSalary);
 
         // TN chịu thuế
         $assessableIncome = max(0, $taxableIncome - $personalDeduction - $dependentDeduction - $bhxhAmount);
@@ -255,7 +263,9 @@ class PayrollService
             // Run the calculation (also persists the Payroll row — keeps DB & PDF in sync).
             $payroll = $this->calculate($emp, $year, $month);
 
-            $dailyRate = (float) ($payroll->detail['daily_rate'] ?? ($emp->basic_salary / $standardDays));
+            // Lương cơ bản có hiệu lực ở tháng đang in báo cáo (tôn trọng salary_changes).
+            $effective = $emp->effectiveSalary($year, $month);
+            $dailyRate = (float) ($payroll->detail['daily_rate'] ?? ($effective['basic_salary'] / $standardDays));
 
             // Sum of OT shifts (Overtime table) by weekday vs Sunday based on the work_date.
             $empOts = $allOvertimes->get($emp->id, collect());
@@ -295,7 +305,7 @@ class PayrollService
                 $totalsByAllowance[$name] += $sum;
             }
 
-            $employerBhxh = round($employerBhxhRate * (float) $emp->bhxh_salary, 0);
+            $employerBhxh = round($employerBhxhRate * $effective['bhxh_salary'], 0);
 
             $row = [
                 'employee' => $emp,
@@ -333,7 +343,7 @@ class PayrollService
             $totals['annual_leave_pay'] += (float) $payroll->annual_leave_pay;
             $totals['total_income'] += (float) $payroll->total_income;
             $totals['taxable_income'] += (float) $payroll->taxable_income;
-            $totals['bhxh_salary'] += (float) $emp->bhxh_salary;
+            $totals['bhxh_salary'] += $effective['bhxh_salary'];
             $totals['employer_bhxh'] += $employerBhxh;
             $totals['bhxh_amount'] += (float) $payroll->bhxh_amount;
             $totals['advance'] += (float) $payroll->advance;

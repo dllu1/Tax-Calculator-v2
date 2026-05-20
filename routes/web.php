@@ -35,6 +35,10 @@ Route::post('/employees/{employee}/dependents', [EmployeeController::class, 'sav
     ->name('employees.dependents.store');
 Route::delete('/dependents/{dependent}', [EmployeeController::class, 'deleteDependent'])
     ->name('dependents.destroy');
+Route::post('/employees/{employee}/salary-change', [EmployeeController::class, 'saveSalaryChange'])
+    ->name('salary-change.store');
+Route::delete('/salary-change/{salaryChange}', [EmployeeController::class, 'deleteSalaryChange'])
+    ->name('salary-change.destroy');
 Route::resource('employees', EmployeeController::class)->except(['show']);
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');

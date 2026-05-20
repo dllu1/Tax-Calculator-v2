@@ -76,4 +76,51 @@ class Employee extends Model
     {
         return $this->hasMany(Dependent::class);
     }
+
+    public function salaryChanges(): HasMany
+    {
+        return $this->hasMany(SalaryChange::class);
+    }
+
+    /**
+     * Tìm mức lương "có hiệu lực" tại tháng cụ thể: chọn SalaryChange mới
+     * nhất có (effective_year, effective_month) ≤ (year, month). Các tháng
+     * trước đợt thay đổi đầu tiên dùng giá trị gốc trên Employee.
+     *
+     * Các trường nullable của SalaryChange (bhxh_salary, diligence_bonus)
+     * tự fall back về đợt thay đổi áp dụng trước nó, cuối cùng về Employee.
+     *
+     * @return array{basic_salary:float, bhxh_salary:float, diligence_bonus:float}
+     */
+    public function effectiveSalary(int $year, int $month): array
+    {
+        $key = $year * 100 + $month;
+
+        // Lấy mọi đợt áp dụng tính tới (year, month), sắp xếp mới nhất trước.
+        $applicable = $this->salaryChanges()
+            ->whereRaw('(effective_year * 100 + effective_month) <= ?', [$key])
+            ->orderByDesc('effective_year')
+            ->orderByDesc('effective_month')
+            ->get();
+
+        // Bắt đầu từ giá trị gốc trên Employee — fallback cuối cùng.
+        $result = [
+            'basic_salary'    => (float) $this->basic_salary,
+            'bhxh_salary'     => (float) $this->bhxh_salary,
+            'diligence_bonus' => (float) $this->diligence_bonus,
+        ];
+
+        // Áp đợt cũ trước, đợt mới sau → đợt mới sẽ ghi đè trường non-null.
+        foreach ($applicable->reverse() as $change) {
+            $result['basic_salary'] = (float) $change->basic_salary;
+            if ($change->bhxh_salary !== null) {
+                $result['bhxh_salary'] = (float) $change->bhxh_salary;
+            }
+            if ($change->diligence_bonus !== null) {
+                $result['diligence_bonus'] = (float) $change->diligence_bonus;
+            }
+        }
+
+        return $result;
+    }
 }

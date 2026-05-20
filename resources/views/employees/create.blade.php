@@ -34,6 +34,8 @@
         {{ __('Thông Tin Cá Nhân') }}</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dependents">
         {{ __('Người Phụ Thuộc') }} ({{ $employee->dependents ?? 0 }})</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-salary-history">
+        {{ __('Lịch Sử Lương') }} ({{ $employee->salaryChanges->count() }})</button></li>
 </ul>
 <div class="tab-content gz-tab-body">
 @endif
@@ -238,6 +240,104 @@
 
         <p class="text-muted small mt-2"><em>
             {{ __('Mỗi lần thêm/xóa, "Số người phụ thuộc" trên tab Hồ Sơ Lương tự cập nhật và áp ngay vào kỳ lương tiếp theo.') }}
+        </em></p>
+    </div>
+</div>
+
+{{-- ============ TAB 4: Lịch Sử Lương ============ --}}
+<div class="tab-pane fade" id="tab-salary-history">
+    <div class="gz-card">
+        <div class="gz-label mb-2">{{ __('Thêm Đợt Thay Đổi Lương') }}</div>
+        <p class="gz-section-lede mb-3">
+            {{ __('Khi tăng lương từ một tháng cụ thể, hãy thêm đợt thay đổi ở đây thay vì sửa trực tiếp lương cơ bản trên tab Hồ Sơ Lương. Các tháng TRƯỚC tháng hiệu lực giữ nguyên mức lương cũ; các tháng từ tháng hiệu lực trở về sau sẽ dùng mức mới.') }}
+        </p>
+
+        @php
+            $nextYear = now()->month === 12 ? now()->year + 1 : now()->year;
+            $nextMonth = now()->month === 12 ? 1 : now()->month + 1;
+        @endphp
+        <form method="POST" action="{{ route('salary-change.store', $employee) }}"
+              data-ajax="true" data-soft-reload="true" data-reset-after="true"
+              class="row g-2 align-items-end">
+            @csrf
+            <div class="col-md-2">
+                <label class="form-label">{{ __('Tháng hiệu lực') }} *</label>
+                <select name="effective_month" class="form-select" required>
+                    @for ($m = 1; $m <= 12; $m++)
+                        <option value="{{ $m }}" @selected($m == $nextMonth)>{{ __('Tháng') }} {{ $m }}</option>
+                    @endfor
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ __('Năm') }} *</label>
+                <input type="number" name="effective_year" class="form-control" required
+                       value="{{ $nextYear }}" min="2000" max="2100">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ __('Lương căn bản') }} *</label>
+                <input type="number" step="1000" name="basic_salary" class="form-control money" required min="0"
+                       placeholder="{{ number_format($employee->basic_salary ?? 0, 0, ',', '.') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ __('Mức BHXH') }}</label>
+                <input type="number" step="1000" name="bhxh_salary" class="form-control money" min="0"
+                       placeholder="{{ __('Giữ nguyên') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ __('Chuyên cần') }}</label>
+                <input type="number" step="1000" name="diligence_bonus" class="form-control money" min="0"
+                       placeholder="{{ __('Giữ nguyên') }}">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> {{ __('Thêm') }}</button>
+            </div>
+            <div class="col-12">
+                <label class="form-label">{{ __('Ghi chú') }}</label>
+                <input name="note" class="form-control" maxlength="255"
+                       placeholder="{{ __('VD: Tăng lương theo nghị quyết tháng 6') }}">
+            </div>
+        </form>
+
+        <table class="gz-table mt-3">
+            <thead>
+                <tr>
+                    <th style="width:120px">{{ __('Hiệu lực từ') }}</th>
+                    <th class="money">{{ __('Lương căn bản') }}</th>
+                    <th class="money">{{ __('Mức BHXH') }}</th>
+                    <th class="money">{{ __('Chuyên cần') }}</th>
+                    <th>{{ __('Ghi chú') }}</th>
+                    <th style="width:60px"></th>
+                </tr>
+            </thead>
+            <tbody>
+            @php $fmt = fn ($n) => $n === null ? '—' : number_format((float)$n, 0, ',', '.'); @endphp
+            @forelse ($employee->salaryChanges as $sc)
+                <tr data-salary-row="{{ $sc->id }}">
+                    <td><strong>{{ str_pad($sc->effective_month, 2, '0', STR_PAD_LEFT) }}/{{ $sc->effective_year }}</strong></td>
+                    <td class="money">{{ $fmt($sc->basic_salary) }}</td>
+                    <td class="money"><em>{{ $fmt($sc->bhxh_salary) }}</em></td>
+                    <td class="money"><em>{{ $fmt($sc->diligence_bonus) }}</em></td>
+                    <td><em>{{ $sc->note }}</em></td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="{{ __('Xóa') }}"
+                                data-ajax-delete="{{ route('salary-change.destroy', $sc) }}"
+                                data-confirm="{{ __('Xóa đợt thay đổi lương') }} {{ str_pad($sc->effective_month, 2, '0', STR_PAD_LEFT) }}/{{ $sc->effective_year }}?"
+                                data-remove-row="tr[data-salary-row]"
+                                data-soft-reload="true">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="6" class="text-center" style="color:var(--gz-muted); padding:1rem;">
+                    <em>{{ __('Chưa có đợt thay đổi lương — đang dùng mức lương trên tab Hồ Sơ Lương cho mọi tháng.') }}</em>
+                </td></tr>
+            @endforelse
+            </tbody>
+        </table>
+
+        <p class="text-muted small mt-2"><em>
+            {{ __('Sau khi thêm/xóa, các bảng lương từ tháng hiệu lực trở về sau sẽ tự tính lại ở lần xem kế tiếp.') }}
         </em></p>
     </div>
 </div>

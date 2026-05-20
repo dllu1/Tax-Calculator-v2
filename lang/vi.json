@@ -77,5 +77,21 @@
     "Bản in tối giản — bấm Ctrl+P để in/lưu PDF (khuyến nghị A3 landscape).": "Bản in tối giản — bấm Ctrl+P để in/lưu PDF (khuyến nghị A3 landscape).",
     "In ngay": "In ngay",
     "Chưa có dữ liệu quyết toán cho kỳ này": "Chưa có dữ liệu quyết toán cho kỳ này",
-    "Tổng cộng": "Tổng cộng"
+    "Tổng cộng": "Tổng cộng",
+
+    "Lịch Sử Lương": "Lịch Sử Lương",
+    "Thêm Đợt Thay Đổi Lương": "Thêm Đợt Thay Đổi Lương",
+    "Khi tăng lương từ một tháng cụ thể, hãy thêm đợt thay đổi ở đây thay vì sửa trực tiếp lương cơ bản trên tab Hồ Sơ Lương. Các tháng TRƯỚC tháng hiệu lực giữ nguyên mức lương cũ; các tháng từ tháng hiệu lực trở về sau sẽ dùng mức mới.": "Khi tăng lương từ một tháng cụ thể, hãy thêm đợt thay đổi ở đây thay vì sửa trực tiếp lương cơ bản trên tab Hồ Sơ Lương. Các tháng TRƯỚC tháng hiệu lực giữ nguyên mức lương cũ; các tháng từ tháng hiệu lực trở về sau sẽ dùng mức mới.",
+    "Tháng hiệu lực": "Tháng hiệu lực",
+    "Năm": "Năm",
+    "Mức BHXH": "Mức BHXH",
+    "Chuyên cần": "Chuyên cần",
+    "Giữ nguyên": "Giữ nguyên",
+    "VD: Tăng lương theo nghị quyết tháng 6": "VD: Tăng lương theo nghị quyết tháng 6",
+    "Hiệu lực từ": "Hiệu lực từ",
+    "Xóa đợt thay đổi lương": "Xóa đợt thay đổi lương",
+    "Chưa có đợt thay đổi lương — đang dùng mức lương trên tab Hồ Sơ Lương cho mọi tháng.": "Chưa có đợt thay đổi lương — đang dùng mức lương trên tab Hồ Sơ Lương cho mọi tháng.",
+    "Sau khi thêm/xóa, các bảng lương từ tháng hiệu lực trở về sau sẽ tự tính lại ở lần xem kế tiếp.": "Sau khi thêm/xóa, các bảng lương từ tháng hiệu lực trở về sau sẽ tự tính lại ở lần xem kế tiếp.",
+    "Đã lưu đợt thay đổi lương": "Đã lưu đợt thay đổi lương",
+    "Đã xóa đợt thay đổi lương": "Đã xóa đợt thay đổi lương"
 }

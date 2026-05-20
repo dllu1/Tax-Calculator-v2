@@ -9,6 +9,11 @@ typography serif và bố cục dòng tiền minh bạch.
 ## Tính năng
 
 - Quản lý nhân viên (mã NV, lương căn bản, mức BHXH, số người phụ thuộc...)
+- **Lịch sử thay đổi lương theo tháng hiệu lực** ngay trong hồ sơ nhân viên:
+  thêm đợt tăng/giảm lương với lương căn bản, mức BHXH, chuyên cần và ghi chú.
+  Bảng lương các tháng trước tháng hiệu lực giữ nguyên mức cũ; từ tháng hiệu lực
+  trở về sau tự dùng mức mới và các payroll đã tính từ mốc đó sẽ được xoá để
+  tính lại ở lần xem kế tiếp.
 - Chấm công theo ngày — 5 trạng thái: **đi làm thường / nửa ngày / chủ nhật (×2) /
   có phép / không phép**. Trạng thái **nửa ngày** trả thêm **½ tiền chuyên cần**
   cho mỗi half-day (không phá tiền chuyên cần cuối tháng).
@@ -134,7 +139,7 @@ php artisan migrate --seed
 ```
 
 Lệnh này sẽ:
-- Tạo 8 bảng: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
+- Tạo các bảng nghiệp vụ: `employees`, `salary_changes`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
 - Sinh **10 nhân viên mẫu** (NV001 – NV010) với vai trò đa dạng: công nhân, tổ
   trưởng, quản đốc, kế toán, nhân sự, QA, phó GĐ, GĐ
 - Chấm công **2 tháng** (tháng trước trọn vẹn + tháng hiện tại tới ngày hôm
@@ -339,13 +344,13 @@ tax-calculator/
 │   │   │                    SettingController, HelpController, LocaleController, AuthController
 │   │   └── Middleware/      SetLocale (đọc ngôn ngữ từ session)
 │   │                        RequirePassword (gác toàn bộ route, redirect tới /auth/setup hoặc /auth/login)
-│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
+│   ├── Models/              Employee, SalaryChange, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
 │   ├── Providers/           AppServiceProvider, NativeAppServiceProvider (cấu hình Electron window + auto-seed)
 │   ├── Services/            TaxService, PayrollService, SettingService, AuthGate (hash & verify mật khẩu/recovery)
 │   ├── Imports/             EmployeesImport (parse-only, bucket new/duplicate)
 │   └── Exports/             EmployeesTemplateExport (sinh file mẫu XLSX)
 ├── database/
-│   ├── migrations/          9 file migration (driver-aware: chạy được cả MySQL & SQLite)
+│   ├── migrations/          Các file migration (driver-aware: chạy được cả MySQL & SQLite)
 │   └── seeders/             DatabaseSeeder (10 NV mẫu × 2 tháng, đủ 5 loại chấm công)
 ├── lang/
 │   ├── vi.json              Bản gốc tiếng Việt
@@ -385,6 +390,8 @@ tax-calculator/
 | `/employees/template` | Tải file mẫu XLSX để chuẩn bị dữ liệu import |
 | `POST /employees/import` | Upload file Excel (phase 1: phân tích trùng mã) |
 | `POST /employees/import/commit` | Xác nhận giữ/ghi đè sau khi xem popup (phase 2) |
+| `POST /employees/{employee}/salary-change` | Thêm/cập nhật đợt thay đổi lương theo tháng hiệu lực |
+| `DELETE /salary-change/{salaryChange}` | Xoá một đợt thay đổi lương và tính lại payroll từ tháng đó |
 | `POST /locale/{vi\|en}` | Đổi ngôn ngữ (lưu vào session) |
 | `GET /auth/setup` | Tạo mật khẩu lần đầu (chỉ hiện khi chưa có) |
 | `POST /auth/setup` | Lưu mật khẩu mới + sinh mã khôi phục |
@@ -437,6 +444,11 @@ typography, and transparent cash-flow layouts.
 ## Features
 
 - Employee management (employee code, base salary, social-insurance level, number of dependants, etc.)
+- **Effective-month salary history** inside each employee profile: add salary
+  increases/decreases with base salary, SI base, diligence bonus, and notes.
+  Payroll months before the effective month keep the previous rate; payrolls
+  from the effective month onward use the new rate and are cleared so they
+  recalculate on the next view.
 - Daily attendance tracking — five states: **normal / half-day / Sunday (×2) /
   paid leave / unpaid leave**. The **half-day** state pays an extra **½ of the
   diligence bonus** per occurrence (and does not forfeit the end-of-month
@@ -577,7 +589,7 @@ php artisan migrate --seed
 ```
 
 This command will:
-- Create 8 tables: `employees`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
+- Create the business tables: `employees`, `salary_changes`, `attendances`, `overtimes`, `product_salaries`, `allowances`, `advances`, `payrolls`, `settings`
 - Seed **10 sample employees** (NV001–NV010) with diverse roles: production
   workers, team lead, foreman, accountant, HR, QA, vice-director, director
 - Attendance for **two months** (full previous month + current month up to
@@ -790,13 +802,13 @@ tax-calculator/
 │   │   │                    SettingController, HelpController, LocaleController, AuthController
 │   │   └── Middleware/      SetLocale (reads the locale from the session)
 │   │                        RequirePassword (guards every route, redirects to /auth/setup or /auth/login)
-│   ├── Models/              Employee, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
+│   ├── Models/              Employee, SalaryChange, Attendance, Overtime, ProductSalary, Allowance, Advance, Payroll, Setting
 │   ├── Providers/           AppServiceProvider, NativeAppServiceProvider (Electron window config + auto-seed)
 │   ├── Services/            TaxService, PayrollService, SettingService, AuthGate (hash & verify password/recovery)
 │   ├── Imports/             EmployeesImport (parse-only, buckets new/duplicate rows)
 │   └── Exports/             EmployeesTemplateExport (generates the blank XLSX template)
 ├── database/
-│   ├── migrations/          9 migration files (driver-aware: work on both MySQL & SQLite)
+│   ├── migrations/          Migration files (driver-aware: work on both MySQL & SQLite)
 │   └── seeders/             DatabaseSeeder (10 sample employees × 2 months, all 5 attendance types)
 ├── lang/
 │   ├── vi.json              Vietnamese source strings
@@ -836,6 +848,8 @@ tax-calculator/
 | `/employees/template` | Download blank XLSX import template |
 | `POST /employees/import` | Upload Excel file (phase 1: analyze duplicates) |
 | `POST /employees/import/commit` | Confirm keep/overwrite after the popup (phase 2) |
+| `POST /employees/{employee}/salary-change` | Add/update an effective-month salary change |
+| `DELETE /salary-change/{salaryChange}` | Delete a salary change and recalculate payrolls from that month |
 | `POST /locale/{vi\|en}` | Switch language (persisted in session) |
 | `GET /auth/setup` | First-time password creation (shown only when none exists) |
 | `POST /auth/setup` | Save the new password and issue a recovery code |

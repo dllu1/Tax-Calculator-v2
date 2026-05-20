@@ -6,7 +6,9 @@ use App\Imports\EmployeesImport;
 use App\Models\Allowance;
 use App\Models\Dependent;
 use App\Models\Employee;
+use App\Models\Payroll;
 use App\Models\ProductSalary;
+use App\Models\SalaryChange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -42,7 +44,9 @@ class EmployeeController extends Controller
 
     public function edit(Employee $employee)
     {
-        $employee->load('dependentRecords');
+        $employee->load(['dependentRecords', 'salaryChanges' => function ($q) {
+            $q->orderByDesc('effective_year')->orderByDesc('effective_month');
+        }]);
         return view('employees.create', compact('employee'));
     }
 
@@ -345,6 +349,71 @@ class EmployeeController extends Controller
     {
         $dependent->delete();
         return $this->respond($request, __('Đã xóa người phụ thuộc'));
+    }
+
+    /**
+     * Lưu một đợt thay đổi lương (tăng/giảm) bắt đầu từ tháng hiệu lực.
+     * Sau khi lưu, xoá Payroll record từ tháng đó trở về sau để các lần
+     * xem Bảng Lương / Quyết Toán tiếp theo sẽ tự tính lại với mức mới.
+     * Các tháng TRƯỚC tháng hiệu lực được giữ nguyên (lương cũ).
+     */
+    public function saveSalaryChange(Request $request, Employee $employee)
+    {
+        $data = $request->validate([
+            'effective_year'  => ['required', 'integer', 'between:2000,2100'],
+            'effective_month' => ['required', 'integer', 'between:1,12'],
+            'basic_salary'    => ['required', 'numeric', 'min:0'],
+            'bhxh_salary'     => ['nullable', 'numeric', 'min:0'],
+            'diligence_bonus' => ['nullable', 'numeric', 'min:0'],
+            'note'            => ['nullable', 'string', 'max:255'],
+        ]);
+
+        SalaryChange::updateOrCreate(
+            [
+                'employee_id'     => $employee->id,
+                'effective_year'  => $data['effective_year'],
+                'effective_month' => $data['effective_month'],
+            ],
+            [
+                'basic_salary'    => $data['basic_salary'],
+                'bhxh_salary'     => $data['bhxh_salary'] ?? null,
+                'diligence_bonus' => $data['diligence_bonus'] ?? null,
+                'note'            => $data['note'] ?? null,
+            ]
+        );
+
+        $this->wipePayrollsFrom($employee, $data['effective_year'], $data['effective_month']);
+
+        return $this->respond($request, __('Đã lưu đợt thay đổi lương'));
+    }
+
+    public function deleteSalaryChange(Request $request, SalaryChange $salaryChange)
+    {
+        $employeeId = $salaryChange->employee_id;
+        $fromYear = $salaryChange->effective_year;
+        $fromMonth = $salaryChange->effective_month;
+
+        $salaryChange->delete();
+
+        // Xoá Payroll từ tháng hiệu lực của đợt vừa xoá — các tháng đó giờ
+        // sẽ fall back về đợt áp dụng trước nó (hoặc Employee.basic_salary).
+        $employee = Employee::find($employeeId);
+        if ($employee) {
+            $this->wipePayrollsFrom($employee, $fromYear, $fromMonth);
+        }
+
+        return $this->respond($request, __('Đã xóa đợt thay đổi lương'));
+    }
+
+    /**
+     * Xoá mọi Payroll record của NV từ (year, month) trở về sau, để chuỗi
+     * tính lương tự cập nhật theo cấu hình lương mới khi xem tiếp.
+     */
+    private function wipePayrollsFrom(Employee $employee, int $year, int $month): void
+    {
+        Payroll::where('employee_id', $employee->id)
+            ->whereRaw('(year * 100 + month) >= ?', [$year * 100 + $month])
+            ->delete();
     }
 
     private function respond(Request $request, string $message)

@@ -171,6 +171,12 @@ class SettlementService
             $pit = $this->tax->calculatePIT($assessableIncome / $divisor);
             $pitPayable = (float) $pit['tax'] * $divisor;
 
+
+            // $assessableIncome = max(0.0, round($sumTaxableIncome - $sumBhxh - $sumFamilyDeduction, 0));
+            // $pit = $this->tax->calculatePIT($assessableIncome);
+            // $pitPayable = (float) $pit['tax'];
+
+
             // "Số thuế phải hoàn lại" = đã trừ - phải nộp (chỉ hoàn nếu > 0)
             $refund = round($sumPitWithheld - $pitPayable, 0);
 
