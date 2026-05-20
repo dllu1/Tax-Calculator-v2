@@ -888,6 +888,35 @@ To wipe everything and start fresh:
 php artisan migrate:fresh --seed
 ```
 
+## Security model
+
+This project is designed as a **local-first, single-user** payroll/tax calculator
+for personal use and portfolio demonstration. It is not intended to be deployed
+as a public web application or used as a multi-user system with separate
+accounts, roles, permissions, or audit trails.
+
+Security choices are scoped to that local single-user model:
+
+- The launcher binds the Laravel server to `127.0.0.1` / `localhost`, not
+  `0.0.0.0`.
+- All business data pages are protected by a single-password gate using
+  bcrypt-hashed credentials and a recovery code.
+- Login and recovery attempts are rate-limited.
+- `POST`, `PUT`, and `DELETE` actions run through Laravel's web middleware and
+  CSRF protection.
+- `GET` routes are kept read-only for business data; recalculation and other
+  persistence actions use explicit `POST` routes.
+- Print/PDF routes opened outside the app use temporary signed URLs.
+
+For a public or multi-user deployment, this model would need additional
+hardening such as per-user accounts, authorization rules, HTTPS-only secure
+cookies, audit logging, production secret management, and a broader threat
+model review.
+
+> Ghi chu: "multi-user" means multiple independent users with separate accounts,
+> permissions, sessions, and data access boundaries. This app intentionally uses
+> a simpler single-user local model.
+
 ## Tech Stack
 
 - **Backend:** Laravel 12, PHP 8.3+
