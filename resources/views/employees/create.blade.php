@@ -94,31 +94,31 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">{{ __('Lương căn bản') }} *</label>
-                <input type="number" step="1000" name="basic_salary" class="form-control money" required
+                <input type="number" step="1" name="basic_salary" class="form-control money" required
                        value="{{ old('basic_salary', $employee->basic_salary ?? 0) }}">
                 <small class="text-muted"><em>{{ __('Là cơ sở để tính lương ngày') }}</em></small>
             </div>
             <div class="col-md-4">
                 <label class="form-label">{{ __('Mức lương đóng BHXH') }} *</label>
-                <input type="number" step="1000" name="bhxh_salary" class="form-control money" required
+                <input type="number" step="1" name="bhxh_salary" class="form-control money" required
                        value="{{ old('bhxh_salary', $employee->bhxh_salary ?? 0) }}">
                 <small class="text-muted"><em>{{ __('BHXH = mức này × 10,5%') }}</em></small>
             </div>
             <div class="col-md-4">
                 <label class="form-label">{{ __('Tiền chuyên cần (đủ công)') }}</label>
-                <input type="number" step="1000" name="diligence_bonus" class="form-control money"
+                <input type="number" step="1" name="diligence_bonus" class="form-control money"
                        value="{{ old('diligence_bonus', $employee->diligence_bonus ?? 0) }}">
                 <small class="text-muted"><em>{{ __('Trả nếu không nghỉ không phép trong tháng') }}</em></small>
             </div>
             <div class="col-md-6">
                 <label class="form-label">{{ __('Tiền thưởng Tết') }}</label>
-                <input type="number" step="1000" name="tet_bonus" class="form-control money"
+                <input type="number" step="1" name="tet_bonus" class="form-control money"
                        value="{{ old('tet_bonus', $employee->tet_bonus ?? 0) }}">
                 <small class="text-muted"><em>{{ __('Cộng vào TN tính thuế. Đặt về 0 sau khi đã chi để không tính tiếp tháng sau.') }}</em></small>
             </div>
             <div class="col-md-6">
                 <label class="form-label">{{ __('Lương phép năm') }}</label>
-                <input type="number" step="1000" name="annual_leave_pay" class="form-control money"
+                <input type="number" step="1" name="annual_leave_pay" class="form-control money"
                        value="{{ old('annual_leave_pay', $employee->annual_leave_pay ?? 0) }}">
                 <small class="text-muted"><em>{{ __('Cộng vào TN tính thuế. Đặt về 0 sau khi đã chi để không tính tiếp tháng sau.') }}</em></small>
             </div>
@@ -275,17 +275,17 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">{{ __('Lương căn bản') }} *</label>
-                <input type="number" step="1000" name="basic_salary" class="form-control money" required min="0"
+                <input type="number" step="1" name="basic_salary" class="form-control money" required min="0"
                        placeholder="{{ number_format($employee->basic_salary ?? 0, 0, ',', '.') }}">
             </div>
             <div class="col-md-2">
                 <label class="form-label">{{ __('Mức BHXH') }}</label>
-                <input type="number" step="1000" name="bhxh_salary" class="form-control money" min="0"
+                <input type="number" step="1" name="bhxh_salary" class="form-control money" min="0"
                        placeholder="{{ __('Giữ nguyên') }}">
             </div>
             <div class="col-md-2">
                 <label class="form-label">{{ __('Chuyên cần') }}</label>
-                <input type="number" step="1000" name="diligence_bonus" class="form-control money" min="0"
+                <input type="number" step="1" name="diligence_bonus" class="form-control money" min="0"
                        placeholder="{{ __('Giữ nguyên') }}">
             </div>
             <div class="col-md-2">

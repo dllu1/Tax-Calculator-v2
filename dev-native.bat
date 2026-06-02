@@ -25,6 +25,22 @@ REM returns the binary path string instead of the API object,
 REM causing the main process to crash with "electron.app undefined".
 set "ELECTRON_RUN_AS_NODE="
 
+REM Laragon does not add php to the system PATH. Resolve it here so the
+REM `php artisan ...` calls below work regardless of how this .bat is launched.
+set "PHP_DIR="
+where php >NUL 2>&1 && goto :php_ok
+for /d %%D in ("C:\laragon\bin\php\php-8.5*") do set "PHP_DIR=%%D"
+if not defined PHP_DIR for /d %%D in ("C:\laragon\bin\php\php-8.*") do set "PHP_DIR=%%D"
+if not defined PHP_DIR (
+    echo  [!] php not found on PATH and no Laragon PHP 8.x detected.
+    echo      Install PHP 8.3+ or add it to PATH, then retry.
+    pause
+    exit /b 1
+)
+echo  [+] php not on PATH - using Laragon PHP: %PHP_DIR%
+set "PATH=%PHP_DIR%;%PATH%"
+:php_ok
+
 if not exist ".env.nativephp" (
     echo  [!] Missing .env.nativephp - run phase 2 setup first.
     pause

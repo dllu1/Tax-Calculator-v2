@@ -43,6 +43,10 @@
         </p>
     </div>
     <div class="d-flex gap-2 align-items-end no-print">
+        <a href="{{ route('payroll.index', ['year' => $year, 'month' => $month]) }}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> {{ __('Quay lại') }}
+        </a>
         <select class="form-select form-select-sm" id="month-nav"
                 data-base="{{ route('payroll.show', [$employee->id, $year, 0]) }}">
             @for ($m=1; $m<=12; $m++)
@@ -259,7 +263,7 @@
             <input type="hidden" name="month" value="{{ $month }}">
             <div class="col-md-4">
                 <label class="form-label">{{ __('Số tiền lương SP') }}</label>
-                <input type="number" step="1000" name="amount" class="form-control"
+                <input type="number" step="1" name="amount" class="form-control"
                        value="{{ $productSalary?->amount ?? 0 }}" required>
             </div>
             <div class="col-md-6">
@@ -292,7 +296,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">{{ __('Số tiền') }}</label>
-                <input type="number" step="1000" name="amount" class="form-control" required>
+                <input type="number" step="1" name="amount" class="form-control" required>
             </div>
             <div class="col-md-3">
                 <button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> {{ __('Thêm') }}</button>
@@ -338,7 +342,7 @@
             <input type="hidden" name="month" value="{{ $month }}">
             <div class="col-md-3">
                 <label class="form-label">{{ __('Số tiền tạm ứng') }}</label>
-                <input type="number" step="1000" name="amount" class="form-control" required>
+                <input type="number" step="1" name="amount" class="form-control" required>
             </div>
             <div class="col-md-3">
                 <label class="form-label">{{ __('Ngày tạm ứng') }}</label>
