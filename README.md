@@ -1,10 +1,24 @@
 # Niên Giám Lương — Tính thuế TNCN & Quản lý lương
 
-> 🇻🇳 Tiếng Việt (bên dưới) · 🇬🇧 [English version](#english-version)
+> 🇻🇳 Tiếng Việt (bên dưới) · 🇬🇧 [English README](README.en.md) · [English section below](#english-version)
 
-Ứng dụng web Laravel 11 tính thuế thu nhập cá nhân và quản lý lương theo quy định
+Ứng dụng web Laravel 12 tính thuế thu nhập cá nhân và quản lý lương theo quy định
 Việt Nam, trình bày dưới giao diện *niên giám / báo cổ điển* với màu mực ấm,
 typography serif và bố cục dòng tiền minh bạch.
+
+## Ảnh màn hình
+
+Ứng dụng đang chạy thật tại một công ty sản xuất.
+
+![Trang nhất — măng sét số báo, sĩ số, tra cứu nhanh](docs/screenshots/home.png)
+*Trang nhất — măng sét số báo, sĩ số, tra cứu nhanh*
+
+| | |
+|---|---|
+| ![Sổ nhân viên — import Excel kèm nút tải file mẫu](docs/screenshots/employees.png)<br>*Sổ nhân viên — import Excel kèm nút tải file mẫu* | ![Thực lãnh, bảo hiểm, thuế và tạm ứng trong một cái nhìn](docs/screenshots/charts.png)<br>*Thực lãnh, bảo hiểm, thuế và tạm ứng trong một cái nhìn* |
+| ![Cổng mật khẩu — bcrypt, mã khôi phục dùng một lần, giới hạn số lần thử](docs/screenshots/login.png)<br>*Cổng mật khẩu — bcrypt, mã khôi phục dùng một lần, giới hạn số lần thử* |  |
+
+---
 
 ## Tính năng
 
@@ -436,7 +450,7 @@ php artisan migrate:fresh --seed
 
 # Niên Giám Lương — Vietnam PIT & Payroll Management System
 
-A Laravel 11 web application that calculates Vietnamese personal income tax (PIT)
+A Laravel 12 web application that calculates Vietnamese personal income tax (PIT)
 and manages monthly payroll according to current Vietnam regulations, presented
 through a *classical gazette / almanac* interface with warm ink colors, serif
 typography, and transparent cash-flow layouts.
