@@ -15,6 +15,8 @@ declare(strict_types=1);
  * Fix: remove `"type": "module"`, downgrade the 3 ESM-only deps to last CJS
  * versions, then nuke node_modules + lockfile and reinstall.
  *
+ * It also refreshes the bundled PHP binary (see updatePhpBinary() below).
+ *
  * Idempotent: safe to run multiple times. Auto-invoked from composer.json's
  * post-install-cmd / post-update-cmd, or manually: `php scripts/apply-nativephp-patches.php`.
  */
@@ -24,6 +26,84 @@ require __DIR__ . '/../vendor/autoload.php';
 use Symfony\Component\Process\Process;
 
 $root  = realpath(__DIR__ . '/..');
+
+/**
+ * Replace vendor/nativephp/php-bin/bin/{os}/{arch}/php-X.Y.zip with the latest
+ * weekly build from NativePHP's R2 bucket.
+ *
+ * Why this exists:
+ *   nativephp/php-bin 1.2.0 (latest Packagist tag) ships stale binaries — its
+ *   php-8.5.zip actually contains PHP 8.4.12, vulnerable to PHP2Shell
+ *   (CVE-2026-109618 / CVE-2026-109619, fixed in 8.5.12 / 8.4.27). Since
+ *   July 2026 new builds are only published to bin.nativephp.com, not tagged.
+ *
+ * NativePHP picks php-{PHP_MAJOR}.{PHP_MINOR}.zip based on the PHP running
+ * artisan, so we refresh that one for the host platform. The download is
+ * verified against the manifest's sha256 before it replaces the vendor file.
+ * Network failures only warn, so `composer install` still works offline.
+ */
+function updatePhpBinary(string $root): void
+{
+    $manifestUrl = 'https://bin.nativephp.com/main/desktop/versions.json';
+    $phpVersion  = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+
+    $machine = strtolower(php_uname('m'));
+    $arch    = in_array($machine, ['arm64', 'aarch64'], true) ? 'arm64' : 'x64';
+    $os      = match (PHP_OS_FAMILY) {
+        'Windows' => 'win',
+        'Darwin'  => 'mac',
+        default   => 'linux',
+    };
+    if ($os === 'win') {
+        $arch = 'x64'; // php.js always uses win/x64
+    }
+
+    $binDir = $root . '/vendor/nativephp/php-bin/bin/' . $os . '/' . $arch;
+    $target = $binDir . '/php-' . $phpVersion . '.zip';
+    if (!is_dir($binDir)) {
+        fwrite(STDERR, "[skip] nativephp/php-bin not installed — $binDir missing\n");
+        return;
+    }
+
+    $ctx = stream_context_create(['http' => ['timeout' => 30]]);
+
+    echo "[php-bin] Fetching manifest $manifestUrl\n";
+    $manifest = json_decode((string) @file_get_contents($manifestUrl, false, $ctx), true);
+    $entry    = $manifest['versions'][$phpVersion]["$os-$arch"][0] ?? null;
+    if (!is_array($entry) || empty($entry['url']) || empty($entry['sha256'])) {
+        fwrite(STDERR, "[warn] No PHP $phpVersion build for $os-$arch in manifest — keeping current php-bin\n");
+        return;
+    }
+
+    if (is_file($target) && hash_file('sha256', $target) === $entry['sha256']) {
+        echo "[php-bin] php-$phpVersion.zip ($os-$arch) already up to date — ok\n";
+        return;
+    }
+
+    echo "[php-bin] Downloading {$entry['url']}\n";
+    $tmp = $target . '.download';
+    if (!@copy($entry['url'], $tmp, $ctx)) {
+        @unlink($tmp);
+        fwrite(STDERR, "[warn] Download failed — keeping current php-$phpVersion.zip (may be vulnerable)\n");
+        return;
+    }
+
+    if (hash_file('sha256', $tmp) !== $entry['sha256']) {
+        @unlink($tmp);
+        fwrite(STDERR, "[warn] sha256 mismatch for downloaded php-$phpVersion.zip — discarded\n");
+        return;
+    }
+
+    if (!@rename($tmp, $target)) {
+        @unlink($tmp);
+        fwrite(STDERR, "[warn] Could not replace $target\n");
+        return;
+    }
+
+    echo "[php-bin] Updated php-$phpVersion.zip ($os-$arch, updated {$manifest['updated_at']})\n";
+}
+
+updatePhpBinary($root);
 $jsDir = $root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'nativephp'
        . DIRECTORY_SEPARATOR . 'electron' . DIRECTORY_SEPARATOR . 'resources'
        . DIRECTORY_SEPARATOR . 'js';
@@ -237,6 +317,268 @@ if (is_dir($serverDir)) {
             json_encode($needed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n"
         );
         echo "[patch] Wrote electron-plugin/dist/server/package.json (type: module)\n";
+    }
+}
+
+// The bundled static-php-cli php.exe ships with OPcache enabled. On Windows it
+// fatals at startup with "Opcode handlers are unusable due to ASLR", which kills
+// the bundled PHP server and leaves the Electron window blank ("app won't launch").
+// Inject opcache.enable=0 into the default ini settings the plugin passes to php.exe.
+$serverPhpJs = $jsDir . DIRECTORY_SEPARATOR . 'electron-plugin'
+             . DIRECTORY_SEPARATOR . 'dist' . DIRECTORY_SEPARATOR . 'server'
+             . DIRECTORY_SEPARATOR . 'php.js';
+if (is_file($serverPhpJs)) {
+    $js = (string) file_get_contents($serverPhpJs);
+    if (strpos($js, "'opcache.enable'") !== false) {
+        echo "[patch] dist/server/php.js already disables OPcache — ok\n";
+    } else {
+        $needle  = "'openssl.cafile': state.caCert\n    };";
+        $replace = "'openssl.cafile': state.caCert,\n"
+                 . "        // Disable OPcache: the static php.exe fatals on Windows\n"
+                 . "        // (\"Opcode handlers are unusable due to ASLR\") and kills the server.\n"
+                 . "        'opcache.enable': '0',\n"
+                 . "        'opcache.enable_cli': '0'\n    };";
+        if (strpos($js, $needle) !== false) {
+            file_put_contents($serverPhpJs, str_replace($needle, $replace, $js));
+            echo "[patch] Disabled OPcache in dist/server/php.js (Windows ASLR fix)\n";
+        } else {
+            fwrite(STDERR, "[warn] Could not locate ini-settings block in dist/server/php.js — skipped OPcache patch\n");
+        }
+    }
+}
+
+patchStartupPerformance($serverPhpJs);
+
+/**
+ * Cut app launch time. Every launch used to boot PHP four times in a row
+ * before the window could open (~0.5s each with the static php.exe):
+ *   1. native:config + native:php-ini — only change between app versions, so
+ *      their JSON output is cached per version in the electron-store.
+ *   2. `artisan optimize` on EVERY launch (~1.8s) — now only when the app
+ *      version changes. Config is excluded from caching: it embeds the
+ *      per-launch NATIVEPHP_SECRET / API port, so a version-gated config cache
+ *      would go stale on the next launch.
+ *   3. The PHP server ran with OPcache off (see ASLR patch above), making every
+ *      request ~10x slower. OPcache is now enabled for the long-lived server
+ *      only, with a unique opcache.cache_id per launch so no other php.exe
+ *      attaches to its shared memory (the cause of the ASLR fatal). If the
+ *      server still dies before it is ready, it is retried without OPcache.
+ */
+function patchStartupPerformance(string $serverPhpJs): void
+{
+    if (!is_file($serverPhpJs)) {
+        return;
+    }
+    $js = (string) file_get_contents($serverPhpJs);
+    $original = $js;
+
+    $patches = [
+        'native:config/php-ini cache' => [
+            'marker' => 'function cachedArtisanOutput(',
+            'edits'  => [
+                [
+                    "function retrievePhpIniSettings() {",
+                    <<<'JS'
+// [perf-patch] native:config / native:php-ini only change between app versions.
+// Cache their JSON output per version so a normal launch skips two PHP boots.
+function cachedArtisanOutput(key, run) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const store = new Store({ name: 'nativephp' });
+        const cacheable = process.env.NODE_ENV !== 'development';
+        const cached = store.get(`${key}_cache`);
+        if (cacheable && cached && cached.version === app.getVersion()) {
+            return { stdout: cached.stdout, stderr: '' };
+        }
+        const result = yield run();
+        if (cacheable) {
+            try {
+                JSON.parse(result.stdout);
+                store.set(`${key}_cache`, { version: app.getVersion(), stdout: result.stdout });
+            }
+            catch (e) {
+                // Not valid JSON — don't cache a broken result.
+            }
+        }
+        return result;
+    });
+}
+function retrievePhpIniSettings() {
+JS,
+                ],
+                [
+                    "let command = ['artisan', 'native:php-ini'];\n"
+                    . "        if (runningSecureBuild()) {\n"
+                    . "            command.unshift(join(appPath, 'build', '__nativephp_app_bundle'));\n"
+                    . "        }\n"
+                    . "        return yield promisify(execFile)(state.php, command, phpOptions);",
+                    "let command = ['artisan', 'native:php-ini'];\n"
+                    . "        if (runningSecureBuild()) {\n"
+                    . "            command.unshift(join(appPath, 'build', '__nativephp_app_bundle'));\n"
+                    . "        }\n"
+                    . "        return yield cachedArtisanOutput('php_ini', () => promisify(execFile)(state.php, command, phpOptions));",
+                ],
+                [
+                    "let command = ['artisan', 'native:config'];\n"
+                    . "        if (runningSecureBuild()) {\n"
+                    . "            command.unshift(join(appPath, 'build', '__nativephp_app_bundle'));\n"
+                    . "        }\n"
+                    . "        return yield promisify(execFile)(state.php, command, phpOptions);",
+                    "let command = ['artisan', 'native:config'];\n"
+                    . "        if (runningSecureBuild()) {\n"
+                    . "            command.unshift(join(appPath, 'build', '__nativephp_app_bundle'));\n"
+                    . "        }\n"
+                    . "        return yield cachedArtisanOutput('native_config', () => promisify(execFile)(state.php, command, phpOptions));",
+                ],
+            ],
+        ],
+        'version-gated optimize' => [
+            'marker' => "'--except=config'",
+            'edits'  => [
+                [
+                    "function shouldOptimize(store) {\n    return process.env.NODE_ENV !== 'development';\n}",
+                    "function shouldOptimize(store) {\n"
+                    . "    // [perf-patch] Re-cache routes/views/events only when the app version changes.\n"
+                    . "    return store.get('optimized_version') !== app.getVersion()\n"
+                    . "        && process.env.NODE_ENV !== 'development';\n}",
+                ],
+                [
+                    "let result = callPhpSync(['artisan', 'optimize'], phpOptions, phpIniSettings);",
+                    "// [perf-patch] Never cache config: it holds the per-launch NATIVEPHP_SECRET and\n"
+                    . "            // API port. Clear any config cache left behind by older app versions.\n"
+                    . "            callPhpSync(['artisan', 'config:clear'], phpOptions, phpIniSettings);\n"
+                    . "            let result = callPhpSync(['artisan', 'optimize', '--except=config'], phpOptions, phpIniSettings);",
+                ],
+            ],
+        ],
+        'OPcache for PHP server' => [
+            'marker' => "'opcache.cache_id'",
+            'edits'  => [
+                [
+                    <<<'JS'
+        const phpServer = callPhp(['-S', `127.0.0.1:${phpPort}`, serverPath], {
+            cwd: cwd,
+            env
+        }, phpIniSettings);
+        const portRegex = /Development Server \(.*:([0-9]+)\) started/gm;
+        phpServer.stdout.on('data', (data) => {
+            if (parseInt(process.env.SHELL_VERBOSITY) > 0) {
+                console.log(data.toString().trim());
+            }
+        });
+        phpServer.stderr.on('data', (data) => {
+            const error = data.toString();
+            const match = portRegex.exec(data.toString());
+            if (match) {
+                const port = parseInt(match[1]);
+                console.log("PHP Server started on port: ", port);
+                resolve({
+                    port,
+                    process: phpServer,
+                });
+            }
+            else {
+                if (error.includes('[NATIVE_EXCEPTION]:')) {
+                    let logFile = join(storagePath, 'logs');
+                    console.log();
+                    console.error('Error in PHP:');
+                    console.error('  ' + error.split('[NATIVE_EXCEPTION]:')[1].trim());
+                    console.log('Please check your log files:');
+                    console.log('  ' + logFile);
+                    console.log();
+                }
+            }
+        });
+        phpServer.on('error', (error) => {
+            reject(error);
+        });
+        phpServer.on('close', (code) => {
+            console.log(`PHP server exited with code ${code}`);
+        });
+JS,
+                    <<<'JS'
+        // [perf-patch] OPcache for the long-lived server only (~10x faster requests).
+        // A unique cache_id per launch keeps every other php.exe off this shared
+        // memory — attaching to it is what triggers the Windows ASLR fatal.
+        // If the server still dies before it is ready, retry once without OPcache.
+        const opcacheIni = {
+            'opcache.enable': '1',
+            'opcache.enable_cli': '1',
+            'opcache.cache_id': `nativephp-${process.pid}-${Date.now()}`,
+        };
+        let serverStarted = false;
+        const startServer = (useOpcache) => {
+            const serverIni = useOpcache ? Object.assign({}, phpIniSettings, opcacheIni) : phpIniSettings;
+            const phpServer = callPhp(['-S', `127.0.0.1:${phpPort}`, serverPath], {
+                cwd: cwd,
+                env
+            }, serverIni);
+            const portRegex = /Development Server \(.*:([0-9]+)\) started/gm;
+            phpServer.stdout.on('data', (data) => {
+                if (parseInt(process.env.SHELL_VERBOSITY) > 0) {
+                    console.log(data.toString().trim());
+                }
+            });
+            phpServer.stderr.on('data', (data) => {
+                const error = data.toString();
+                const match = portRegex.exec(data.toString());
+                if (match) {
+                    serverStarted = true;
+                    const port = parseInt(match[1]);
+                    console.log("PHP Server started on port: ", port, useOpcache ? '(OPcache on)' : '(OPcache off)');
+                    resolve({
+                        port,
+                        process: phpServer,
+                    });
+                }
+                else {
+                    if (error.includes('[NATIVE_EXCEPTION]:')) {
+                        let logFile = join(storagePath, 'logs');
+                        console.log();
+                        console.error('Error in PHP:');
+                        console.error('  ' + error.split('[NATIVE_EXCEPTION]:')[1].trim());
+                        console.log('Please check your log files:');
+                        console.log('  ' + logFile);
+                        console.log();
+                    }
+                }
+            });
+            phpServer.on('error', (error) => {
+                reject(error);
+            });
+            phpServer.on('close', (code) => {
+                console.log(`PHP server exited with code ${code}`);
+                if (!serverStarted && useOpcache) {
+                    console.warn('PHP server failed to start with OPcache — retrying without it');
+                    startServer(false);
+                }
+            });
+        };
+        startServer(true);
+JS,
+                ],
+            ],
+        ],
+    ];
+
+    foreach ($patches as $name => $patch) {
+        if (strpos($js, $patch['marker']) !== false) {
+            echo "[patch] dist/server/php.js already has $name — ok\n";
+            continue;
+        }
+        foreach ($patch['edits'] as [$needle, $replace]) {
+            if (strpos($js, $needle) === false) {
+                fwrite(STDERR, "[warn] Could not locate code for $name in dist/server/php.js — skipped\n");
+                continue 2;
+            }
+        }
+        foreach ($patch['edits'] as [$needle, $replace]) {
+            $js = str_replace($needle, $replace, $js);
+        }
+        echo "[patch] Applied $name in dist/server/php.js\n";
+    }
+
+    if ($js !== $original) {
+        file_put_contents($serverPhpJs, $js);
     }
 }
 

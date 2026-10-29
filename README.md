@@ -229,6 +229,15 @@ xóa `type:module`, thêm `portNumbers` shim, sub-`package.json` ESM cho
 `electron-plugin/dist/server/` — cần thiết vì NativePHP 1.3.0 + Node ≥20 có
 bug ESM/CJS bridge).
 
+Script này cũng:
+- **Cập nhật PHP đóng gói** lên build mới nhất từ `bin.nativephp.com` (kiểm tra
+  sha256). `nativephp/php-bin` 1.2.0 trên Packagist chứa PHP cũ còn lỗi PHP2Shell
+  (CVE-2026-109618/109619); bản vá cần PHP ≥ 8.5.12 / 8.4.27.
+- **Tăng tốc khởi động app**: cache `native:config`/`native:php-ini` theo phiên
+  bản, chỉ chạy `optimize` khi đổi phiên bản (không cache config vì chứa secret
+  đổi mỗi lần mở), bật OPcache cho PHP server với `cache_id` riêng mỗi lần mở
+  (tự chạy lại không OPcache nếu server không khởi động được).
+
 ### Bước 2: Dev mode (mở Electron window từ source)
 ```bash
 # Trên Windows, double-click hoặc:
@@ -682,6 +691,17 @@ publish its config, install npm dependencies under
 remove `type:module`; add a `portNumbers` shim; drop a sub-`package.json`
 under `electron-plugin/dist/server/` that re-enables ESM there — all needed
 because NativePHP 1.3.0 + Node ≥20 hits a known ESM/CJS bridge bug otherwise).
+
+The script also:
+- **Refreshes the bundled PHP** to the latest build from `bin.nativephp.com`
+  (sha256-verified). `nativephp/php-bin` 1.2.0 on Packagist ships stale PHP
+  that is vulnerable to PHP2Shell (CVE-2026-109618/109619); the fix needs
+  PHP ≥ 8.5.12 / 8.4.27.
+- **Speeds up app launch**: caches `native:config`/`native:php-ini` per app
+  version, runs `optimize` only when the version changes (config is never
+  cached because it holds a per-launch secret), and enables OPcache for the
+  PHP server with a unique `cache_id` per launch (falls back to no OPcache if
+  the server fails to start).
 
 ### Step 2: Dev mode (open the Electron window from source)
 ```bash
